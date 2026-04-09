@@ -111,10 +111,10 @@ router.get("/health/db", (_req, res) => {
     state === 1
       ? "connected"
       : state === 2
-      ? "connecting"
-      : state === 3
-      ? "disconnecting"
-      : "disconnected";
+        ? "connecting"
+        : state === 3
+          ? "disconnecting"
+          : "disconnected";
   res.json({
     connected: state === 1,
     state,
