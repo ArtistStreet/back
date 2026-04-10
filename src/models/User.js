@@ -11,7 +11,7 @@ const addressSchema = new mongoose.Schema(
     street: { type: String, required: true },
     isDefault: { type: Boolean, default: false },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const userSchema = new mongoose.Schema(
@@ -19,7 +19,7 @@ const userSchema = new mongoose.Schema(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    role: { type: String, enum: ["user", "admin"], default: "user" },
+    role: { type: String, enum: ["user", "admin", "seller"], default: "user" },
     username: { type: String },
     phone: { type: String },
     gender: {
@@ -29,9 +29,14 @@ const userSchema = new mongoose.Schema(
     },
     birthDate: { type: Date },
     avatar: { type: String },
+    shopName: { type: String },
+    shopDescription: { type: String },
+    shopAvatar: { type: String },
+    shopCover: { type: String },
+    shopAddress: { type: String },
     addresses: { type: [addressSchema], default: [] },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 userSchema.pre("save", async function () {
