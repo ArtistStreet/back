@@ -8,7 +8,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "seed:products": "node src/seeds/seedProducts.js",
     "seed:admin": "node src/seeds/seedAdmin.js"
-},
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
