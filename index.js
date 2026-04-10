@@ -1,9 +1,11 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const path = require('path');
-const apiRoutes = require('./src/routes/api');
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const path = require("path");
+const http = require("http");
+const { Server } = require("socket.io");
+const apiRoutes = require("./src/routes/api");
 
 dotenv.config();
 
@@ -11,23 +13,104 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/api', apiRoutes);
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/api", apiRoutes);
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+  },
+});
+
+const userSocketCounts = new Map();
+
+const emitPresence = (userId, isOnline) => {
+  io.emit("chat:presence", {
+    userId: String(userId),
+    isOnline: !!isOnline,
+  });
+};
+
+const markUserConnected = (userId) => {
+  const normalizedUserId = String(userId);
+  const nextCount = (userSocketCounts.get(normalizedUserId) || 0) + 1;
+  userSocketCounts.set(normalizedUserId, nextCount);
+  if (nextCount === 1) {
+    emitPresence(normalizedUserId, true);
+  }
+};
+
+const markUserDisconnected = (userId) => {
+  const normalizedUserId = String(userId);
+  const currentCount = userSocketCounts.get(normalizedUserId) || 0;
+  if (currentCount <= 1) {
+    userSocketCounts.delete(normalizedUserId);
+    emitPresence(normalizedUserId, false);
+    return;
+  }
+  userSocketCounts.set(normalizedUserId, currentCount - 1);
+};
+
+io.on("connection", (socket) => {
+  socket.on("chat:join", (payload) => {
+    const { userId } = payload || {};
+    if (userId) {
+      const nextUserId = String(userId);
+      const previousUserId = socket.data.userId ? String(socket.data.userId) : "";
+      if (previousUserId && previousUserId !== nextUserId) {
+        socket.leave(previousUserId);
+        markUserDisconnected(previousUserId);
+      }
+
+      socket.data.userId = nextUserId;
+      socket.join(nextUserId);
+      markUserConnected(nextUserId);
+
+      socket.emit("chat:presence:list", {
+        userIds: [...userSocketCounts.keys()],
+      });
+    }
+  });
+
+  socket.on("chat:typing", (payload) => {
+    const { customerId, sellerId, typing, isFromCustomer } = payload || {};
+    if (customerId && sellerId) {
+      const targetRoom = isFromCustomer ? String(sellerId) : String(customerId);
+      io.to(targetRoom).emit("chat:typing", {
+        customerId,
+        sellerId,
+        typing: !!typing,
+        isFromCustomer: !!isFromCustomer,
+      });
+    }
+  });
+
+  socket.on("disconnect", () => {
+    const userId = socket.data.userId ? String(socket.data.userId) : "";
+    if (userId) {
+      markUserDisconnected(userId);
+    }
+  });
+});
+
+app.set("io", io);
 
 const PORT = process.env.PORT || 5000;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/shopee-clone';
+const MONGODB_URI =
+  process.env.MONGODB_URI || "mongodb://localhost:27017/shopee-clone";
 
-mongoose.connect(MONGODB_URI)
+mongoose
+  .connect(MONGODB_URI)
   .then(() => {
-    console.log('Kết nối MongoDB thành công');
-    app.listen(PORT, () => {
+    console.log("Kết nối MongoDB thành công");
+    server.listen(PORT, () => {
       console.log(`Server đang chạy trên port ${PORT}`);
     });
   })
-  .catch(err => {
-    console.error('Lỗi kết nối MongoDB:', err);
-    // Vẫn cho server chạy để trả về lỗi thay vì crash (tùy chọn)
-    app.listen(PORT, () => {
+  .catch((err) => {
+    console.error("Lỗi kết nối MongoDB:", err);
+    server.listen(PORT, () => {
       console.log(`Server (Database disconnected) đang chạy trên port ${PORT}`);
     });
   });
