@@ -51,30 +51,7 @@ const getMockData = () => {
     return PRODUCTS;
   } catch (err) {
     console.log("Không thể tải mockData từ frontend, dùng dữ liệu mặc định");
-    return [
-      {
-        id: 1,
-        name: "Sản phẩm mẫu 1",
-        price: 100000,
-        originalPrice: 150000,
-        discount: 33,
-        image: "https://picsum.photos/seed/1/400/400",
-        rating: 5,
-        sold: 100,
-        category: "Thời Trang Nam",
-      },
-      {
-        id: 2,
-        name: "Sản phẩm mẫu 2",
-        price: 200000,
-        originalPrice: 300000,
-        discount: 33,
-        image: "https://picsum.photos/seed/2/400/400",
-        rating: 4,
-        sold: 50,
-        category: "Thiết Bị Điện Tử",
-      },
-    ];
+    return [];
   }
 };
 
