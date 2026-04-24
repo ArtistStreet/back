@@ -5,6 +5,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
+    "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
     "seed:products": "node src/seeds/seedProducts.js",
     "seed:admin": "node src/seeds/seedAdmin.js"
@@ -26,6 +27,8 @@
     "openai": "^6.25.0",
     "sharp": "^0.34.5",
     "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
   }
 }
-

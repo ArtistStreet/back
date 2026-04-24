@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES6", // Phiên bản JS đầu ra
+    "module": "CommonJS", // Chuẩn module cho Node.js
+    "allowJs": true, // QUAN TRỌNG: Cho phép file .js
+    "outDir": "./dist", // Thư mục chứa kết quả build
+    "rootDir": "./src", // Thư mục chứa code gốc
+    "strict": false, // Tắt kiểm tra nghiêm ngặt để tránh lỗi file JS thuần
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"], // Quét toàn bộ file trong thư mục src
+  "exclude": ["node_modules", "dist"] // Loại trừ các thư mục không cần thiết
+}
