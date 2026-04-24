@@ -164,7 +164,7 @@ app.post('/api/chat/assistant', async (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI =
-  process.env.MONGODB_URI || "mongodb://localhost:27017/shopee-clone";
+  process.env.MONGODB_URI || "mongodb://localhost:27017/ShopBee-clone";
 
 mongoose
   .connect(MONGODB_URI)
@@ -180,3 +180,4 @@ mongoose
       console.log(`Server (Database disconnected) đang chạy trên port ${PORT}`);
     });
   });
+

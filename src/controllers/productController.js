@@ -371,7 +371,7 @@ exports.chatbotResponse = async (req, res) => {
           {
             role: "system",
             content:
-              "Bạn là trợ lý ảo hỗ trợ khách hàng cho trang thương mại điện tử Shopee (phiên bản Blue Glass). Hãy trả lời thân thiện, chuyên nghiệp và ngắn gọn.",
+              "Bạn là trợ lý ảo hỗ trợ khách hàng cho trang thương mại điện tử ShopBee (phiên bản Blue Glass). Hãy trả lời thân thiện, chuyên nghiệp và ngắn gọn.",
           },
           { role: "user", content: message },
         ],
@@ -394,7 +394,7 @@ exports.chatbotResponse = async (req, res) => {
       reply = "Bạn có thể đổi trả trong vòng 7 ngày nếu có lỗi sản xuất ạ.";
     } else {
       reply =
-        "Chào bạn! Tôi là trợ lý AI của Shopee. Tôi có thể giúp bạn tìm kiếm sản phẩm hoặc giải đáp thắc mắc về đơn hàng.";
+        "Chào bạn! Tôi là trợ lý AI của ShopBee. Tôi có thể giúp bạn tìm kiếm sản phẩm hoặc giải đáp thắc mắc về đơn hàng.";
     }
   }
 
@@ -405,7 +405,7 @@ exports.chatbotResponse = async (req, res) => {
     try {
       const decoded = jwt.verify(
         token,
-        process.env.JWT_SECRET || "shopee_secret",
+        process.env.JWT_SECRET || "ShopBee_secret",
       );
       userId = decoded.id;
     } catch (err) {
@@ -446,3 +446,4 @@ exports.chatbotResponse = async (req, res) => {
 
   res.json({ response: reply });
 };
+

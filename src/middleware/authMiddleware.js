@@ -11,7 +11,7 @@ const protect = async (req, res, next) => {
       token = req.headers.authorization.split(" ")[1];
       const decoded = jwt.verify(
         token,
-        process.env.JWT_SECRET || "shopee_secret"
+        process.env.JWT_SECRET || "ShopBee_secret"
       );
       req.user = await User.findById(decoded.id).select("-password");
       next();
@@ -41,3 +41,4 @@ const isSeller = (req, res, next) => {
 };
 
 module.exports = { protect, admin, isSeller };
+

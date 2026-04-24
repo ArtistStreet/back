@@ -38,3 +38,4 @@ productSchema.index({ category: 1 });
 productSchema.index({ name: "text" });
 
 module.exports = mongoose.model("Product", productSchema);
+

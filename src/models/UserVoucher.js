@@ -23,3 +23,4 @@ userVoucherSchema.index({ user: 1, code: 1 }, { unique: true });
 
 module.exports = mongoose.model("UserVoucher", userVoucherSchema);
 
+

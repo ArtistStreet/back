@@ -1,5 +1,5 @@
 {
-  "name": "backend",
+  "name": "shopbee-backend",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -28,3 +28,4 @@
     "socket.io": "^4.8.3"
   }
 }
+

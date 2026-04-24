@@ -46,7 +46,7 @@ exports.register = async (req, res) => {
     });
     const token = jwt.sign(
       { id: user._id },
-      process.env.JWT_SECRET || "shopee_secret",
+      process.env.JWT_SECRET || "ShopBee_secret",
       { expiresIn: "7d" },
     );
 
@@ -96,7 +96,7 @@ exports.login = async (req, res) => {
 
     const token = jwt.sign(
       { id: user._id },
-      process.env.JWT_SECRET || "shopee_secret",
+      process.env.JWT_SECRET || "ShopBee_secret",
       { expiresIn: "7d" },
     );
     res.json({
@@ -194,7 +194,7 @@ exports.updateProfile = async (req, res) => {
 
     const token = jwt.sign(
       { id: user._id },
-      process.env.JWT_SECRET || "shopee_secret",
+      process.env.JWT_SECRET || "ShopBee_secret",
       { expiresIn: "7d" },
     );
 
@@ -326,7 +326,7 @@ exports.becomeSeller = async (req, res) => {
 
     const token = jwt.sign(
       { id: user._id },
-      process.env.JWT_SECRET || "shopee_secret",
+      process.env.JWT_SECRET || "ShopBee_secret",
       { expiresIn: "7d" },
     );
 
@@ -427,7 +427,7 @@ exports.changePassword = async (req, res) => {
 
     const token = jwt.sign(
       { id: user._id },
-      process.env.JWT_SECRET || "shopee_secret",
+      process.env.JWT_SECRET || "ShopBee_secret",
       { expiresIn: "7d" },
     );
 
@@ -536,3 +536,4 @@ exports.uploadShopCover = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
