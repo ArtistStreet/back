@@ -1,3 +1,4 @@
+"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -106,7 +107,7 @@ const reviewMediaUpload = multer({
 ]);
 const optimizeUploadedImage = (options) => {
     const { targetDir, filenamePrefix, maxWidth, maxHeight } = options;
-    return (req, res, next) => __awaiter(this, void 0, void 0, function* () {
+    return (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
         if (!req.file) {
             res.status(400).json({ message: "No file uploaded" });
             return;

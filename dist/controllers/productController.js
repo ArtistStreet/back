@@ -1,3 +1,4 @@
+"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -61,7 +62,7 @@ const getMockData = () => {
         return [];
     }
 };
-exports.getProducts = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.getProducts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { category, search, sort, limit, page, sellerOnly, sellerId } = req.query;
         const lim = Number(limit);
@@ -131,7 +132,7 @@ exports.getProducts = (req, res) => __awaiter(this, void 0, void 0, function* ()
         res.status(500).json({ message: error.message });
     }
 });
-exports.getProductById = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.getProductById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         if (require("mongoose").connection.readyState !== 1) {
             const PRODUCTS = getMockData();
@@ -167,7 +168,7 @@ exports.getProductById = (req, res) => __awaiter(this, void 0, void 0, function*
         res.status(500).json({ message: error.message });
     }
 });
-exports.createProduct = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.createProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         if (require("mongoose").connection.readyState !== 1) {
             return res
@@ -222,7 +223,7 @@ exports.createProduct = (req, res) => __awaiter(this, void 0, void 0, function* 
         res.status(400).json({ message: error.message });
     }
 });
-exports.updateProduct = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.updateProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         if (require("mongoose").connection.readyState !== 1) {
             return res
@@ -296,7 +297,7 @@ exports.updateProduct = (req, res) => __awaiter(this, void 0, void 0, function* 
         res.status(400).json({ message: error.message });
     }
 });
-exports.deleteProduct = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.deleteProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         if (require("mongoose").connection.readyState !== 1) {
             return res.status(503).json({ message: "Cơ sở dữ liệu chưa sẵn sàng" });
@@ -322,7 +323,7 @@ exports.deleteProduct = (req, res) => __awaiter(this, void 0, void 0, function* 
         res.status(500).json({ message: error.message });
     }
 });
-exports.chatbotResponse = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.chatbotResponse = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { message, partnerId } = req.body || {};
     if (!message || typeof message !== "string") {
         return res.status(400).json({ message: "Thiếu nội dung tin nhắn" });

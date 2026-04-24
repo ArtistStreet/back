@@ -1,3 +1,4 @@
+"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -50,7 +51,7 @@ const computeStatus = (voucher) => {
         return "expired";
     return "valid";
 };
-exports.getDiscover = (_req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.getDiscover = (_req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.json(voucherCatalog.map((v) => ({
         code: v.code,
         description: v.description,
@@ -62,7 +63,7 @@ exports.getDiscover = (_req, res) => __awaiter(this, void 0, void 0, function* (
         shop: v.shop,
     })));
 });
-exports.getMyVouchers = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.getMyVouchers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const items = yield UserVoucher.find({ user: req.user._id })
         .sort({ createdAt: -1 })
         .lean();
@@ -83,7 +84,7 @@ exports.getMyVouchers = (req, res) => __awaiter(this, void 0, void 0, function* 
         .filter((v) => v.status === "valid");
     res.json(mapped);
 });
-exports.getHistory = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.getHistory = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const items = yield UserVoucher.find({ user: req.user._id })
         .sort({ createdAt: -1 })
         .lean();
@@ -101,7 +102,7 @@ exports.getHistory = (req, res) => __awaiter(this, void 0, void 0, function* () 
         };
     }));
 });
-exports.addVoucher = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.addVoucher = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const code = normalizeCode((_a = req.body) === null || _a === void 0 ? void 0 : _a.code);
     if (!code)

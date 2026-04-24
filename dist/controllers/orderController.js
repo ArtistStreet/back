@@ -1,3 +1,4 @@
+"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -13,7 +14,7 @@ const UserVoucher = require("../models/UserVoucher");
 const Notification = require("../models/Notification");
 const { __catalogForServer } = require("./voucherController");
 const ChatMessage = require("../models/ChatMessage");
-exports.createOrder = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.createOrder = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { orderItems, voucherCode, shippingAddress } = req.body;
     if (orderItems && orderItems.length === 0) {
         return res.status(400).json({ message: "No order items" });
@@ -161,7 +162,7 @@ exports.createOrder = (req, res) => __awaiter(this, void 0, void 0, function* ()
     }
     res.status(201).json(createdOrder);
 });
-exports.getMyOrders = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.getMyOrders = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const orders = yield Order.find({ user: req.user._id })
             .sort({ createdAt: -1 })
@@ -172,7 +173,7 @@ exports.getMyOrders = (req, res) => __awaiter(this, void 0, void 0, function* ()
         res.status(500).json({ message: error.message });
     }
 });
-exports.cancelOrder = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.cancelOrder = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const order = yield Order.findOne({
             _id: req.params.id,
@@ -235,7 +236,7 @@ exports.cancelOrder = (req, res) => __awaiter(this, void 0, void 0, function* ()
         res.status(500).json({ message: error.message });
     }
 });
-exports.getDashboardStats = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.getDashboardStats = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         if (require("mongoose").connection.readyState !== 1) {
             // Dữ liệu mock cho dashboard khi mất kết nối DB

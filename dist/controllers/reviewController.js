@@ -1,3 +1,4 @@
+"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -29,7 +30,7 @@ const shapeReviewPayload = (reviewDoc) => {
                     : String(item.userId || "") })))
             : [] });
 };
-const recalculateProductRating = (productId) => __awaiter(this, void 0, void 0, function* () {
+const recalculateProductRating = (productId) => __awaiter(void 0, void 0, void 0, function* () {
     const product = yield Product.findById(productId);
     if (!product)
         return;
@@ -41,7 +42,7 @@ const recalculateProductRating = (productId) => __awaiter(this, void 0, void 0, 
             : 0;
     yield product.save();
 });
-exports.createReview = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.createReview = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { rating, comment, productId } = req.body;
         const product = yield Product.findById(productId).populate('seller', '_id');
@@ -99,7 +100,7 @@ exports.createReview = (req, res) => __awaiter(this, void 0, void 0, function* (
         res.status(500).json({ message: error.message });
     }
 });
-exports.updateReview = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.updateReview = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const review = yield Review.findById(req.params.id);
         if (!review) {
@@ -128,7 +129,7 @@ exports.updateReview = (req, res) => __awaiter(this, void 0, void 0, function* (
         res.status(500).json({ message: error.message });
     }
 });
-exports.getProductReviews = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.getProductReviews = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const reviews = yield Review.find({ product: req.params.productId })
             .populate("user", "name avatar")
@@ -139,7 +140,7 @@ exports.getProductReviews = (req, res) => __awaiter(this, void 0, void 0, functi
         res.status(500).json({ message: error.message });
     }
 });
-exports.getAllReviews = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.getAllReviews = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const reviews = yield Review.find({})
             .populate("product", "name")
@@ -151,7 +152,7 @@ exports.getAllReviews = (req, res) => __awaiter(this, void 0, void 0, function* 
         res.status(500).json({ message: error.message });
     }
 });
-exports.getSellerReviews = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.getSellerReviews = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         if (!req.user || !req.user._id) {
             return res.status(401).json({ message: "Unauthorized" });
@@ -181,7 +182,7 @@ exports.getSellerReviews = (req, res) => __awaiter(this, void 0, void 0, functio
         res.status(500).json({ message: error.message });
     }
 });
-exports.replyReview = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.replyReview = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const message = String(req.body.message || "").trim();
         if (!message) {
@@ -218,7 +219,7 @@ exports.replyReview = (req, res) => __awaiter(this, void 0, void 0, function* ()
         res.status(500).json({ message: error.message });
     }
 });
-exports.addReviewComment = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.addReviewComment = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const message = String(req.body.message || "").trim();
         if (!message) {
@@ -246,7 +247,7 @@ exports.addReviewComment = (req, res) => __awaiter(this, void 0, void 0, functio
         res.status(500).json({ message: error.message });
     }
 });
-exports.deleteReview = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.deleteReview = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const review = yield Review.findById(req.params.id);
         if (review) {

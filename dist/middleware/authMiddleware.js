@@ -1,3 +1,4 @@
+"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -9,7 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
-const protect = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
+const protect = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     let token;
     if (req.headers.authorization &&
         req.headers.authorization.startsWith("Bearer")) {

@@ -1,3 +1,4 @@
+"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -9,7 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
-exports.getCart = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.getCart = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     let cart = yield Cart.findOne({ user: req.user._id }).populate("items.product", "stock");
     if (!cart) {
         cart = yield Cart.create({ user: req.user._id, items: [] });
@@ -27,7 +28,7 @@ exports.getCart = (req, res) => __awaiter(this, void 0, void 0, function* () {
     });
     res.json(Object.assign(Object.assign({}, cart.toObject()), { items }));
 });
-exports.addItem = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.addItem = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { productId, quantity } = req.body;
     const qty = Math.max(1, Number(quantity || 1));
     const product = yield Product.findById(productId);
@@ -66,7 +67,7 @@ exports.addItem = (req, res) => __awaiter(this, void 0, void 0, function* () {
     });
     res.status(200).json(Object.assign(Object.assign({}, updatedCart.toObject()), { items }));
 });
-exports.updateItem = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.updateItem = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const productId = req.params.productId;
     const { quantity } = req.body;
     let cart = yield Cart.findOne({ user: req.user._id });
@@ -106,7 +107,7 @@ exports.updateItem = (req, res) => __awaiter(this, void 0, void 0, function* () 
     });
     res.json(Object.assign(Object.assign({}, updatedCart.toObject()), { items }));
 });
-exports.removeItem = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.removeItem = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const productId = req.params.productId;
     let cart = yield Cart.findOne({ user: req.user._id });
     if (!cart)
@@ -115,7 +116,7 @@ exports.removeItem = (req, res) => __awaiter(this, void 0, void 0, function* () 
     yield cart.save();
     res.json(cart);
 });
-exports.clearCart = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.clearCart = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     let cart = yield Cart.findOne({ user: req.user._id });
     if (!cart) {
         cart = yield Cart.create({ user: req.user._id, items: [] });

@@ -1,3 +1,4 @@
+"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -9,7 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const Notification = require('../models/Notification');
 const mongoose = require('mongoose');
-exports.getNotifications = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.getNotifications = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const notifications = yield Notification.find({ user: req.user._id })
             .sort({ createdAt: -1 });
@@ -19,7 +20,7 @@ exports.getNotifications = (req, res) => __awaiter(this, void 0, void 0, functio
         res.status(500).json({ message: error.message });
     }
 });
-exports.markAsRead = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.markAsRead = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const notification = yield Notification.findById(req.params.id);
         if (notification && notification.user.toString() === req.user._id.toString()) {
@@ -35,7 +36,7 @@ exports.markAsRead = (req, res) => __awaiter(this, void 0, void 0, function* () 
         res.status(500).json({ message: error.message });
     }
 });
-exports.deleteNotification = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.deleteNotification = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const notificationId = req.params.id;
         if (!mongoose.Types.ObjectId.isValid(notificationId)) {
@@ -54,7 +55,7 @@ exports.deleteNotification = (req, res) => __awaiter(this, void 0, void 0, funct
         res.status(500).json({ message: error.message });
     }
 });
-exports.markAllAsRead = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.markAllAsRead = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const result = yield Notification.updateMany({ user: req.user._id, isRead: false }, { $set: { isRead: true } });
         res.json({
@@ -66,7 +67,7 @@ exports.markAllAsRead = (req, res) => __awaiter(this, void 0, void 0, function* 
         res.status(500).json({ message: error.message });
     }
 });
-exports.deleteReadNotifications = (req, res) => __awaiter(this, void 0, void 0, function* () {
+exports.deleteReadNotifications = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const result = yield Notification.deleteMany({
             user: req.user._id,

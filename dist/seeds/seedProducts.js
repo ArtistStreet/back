@@ -1,3 +1,4 @@
+"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -190,7 +191,7 @@ const products = [
         stock: 150,
     },
 ];
-const seedProducts = () => __awaiter(this, void 0, void 0, function* () {
+const seedProducts = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
         yield mongoose.connect(MONGODB_URI);
         console.log("✅ Kết nối MongoDB thành công");

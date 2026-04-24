@@ -27,5 +27,8 @@
     "openai": "^6.25.0",
     "sharp": "^0.34.5",
     "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
   }
 }
