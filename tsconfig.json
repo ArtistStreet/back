@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "allowJs": true, // Cho phép trình biên dịch chấp nhận file .js
+    "checkJs": false, // Đặt là true nếu bạn muốn TS báo lỗi cả trong file JS
+    "outDir": "./dist", // Thư mục chứa file sau khi build
+    "rootDir": "./src", // Thư mục gốc chứa code
+    "module": "CommonJS",
+    "target": "ES6"
+  },
+  "include": ["src/**/*"] // Quét toàn bộ file trong src
+}

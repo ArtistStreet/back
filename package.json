@@ -5,6 +5,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
+    "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
     "seed:products": "node src/seeds/seedProducts.js",
     "seed:admin": "node src/seeds/seedAdmin.js"
@@ -28,4 +29,3 @@
     "socket.io": "^4.8.3"
   }
 }
-
