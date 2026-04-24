@@ -1,6 +1,40 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
+const normalizeBearerToken = (rawValue) => {
+  if (!rawValue) return "";
+  const normalized = String(rawValue)
+    .trim()
+    .replace(/^"+|"+$/g, "");
+  if (!normalized || normalized === "null" || normalized === "undefined") {
+    return "";
+  }
+  return normalized;
+};
+
+const resolveDecodedToken = (token) => {
+  const legacySecrets = String(process.env.JWT_LEGACY_SECRETS || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const candidateSecrets = [
+    process.env.JWT_SECRET,
+    ...legacySecrets,
+    "shopee_secret",
+    "ShopBee_secret",
+  ].filter(Boolean);
+
+  let lastError = null;
+  for (const secret of candidateSecrets) {
+    try {
+      return jwt.verify(token, secret);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError || new Error("Token verification failed");
+};
+
 const protect = async (req, res, next) => {
   let token;
   if (
@@ -8,12 +42,17 @@ const protect = async (req, res, next) => {
     req.headers.authorization.startsWith("Bearer")
   ) {
     try {
-      token = req.headers.authorization.split(" ")[1];
-      const decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET || "ShopBee_secret"
-      );
+      token = normalizeBearerToken(req.headers.authorization.split(" ")[1]);
+      if (!token) {
+        return res.status(401).json({ message: "Not authorized, no token" });
+      }
+      const decoded = resolveDecodedToken(token);
       req.user = await User.findById(decoded.id).select("-password");
+      if (!req.user) {
+        return res
+          .status(401)
+          .json({ message: "Not authorized, user missing" });
+      }
       next();
     } catch (error) {
       console.error(error);
@@ -41,4 +80,3 @@ const isSeller = (req, res, next) => {
 };
 
 module.exports = { protect, admin, isSeller };
-
