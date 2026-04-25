@@ -63,6 +63,28 @@ const protect = async (req, res, next) => {
   }
 };
 
+const optionalProtect = async (req, _res, next) => {
+  if (
+    !req.headers.authorization ||
+    !req.headers.authorization.startsWith("Bearer")
+  ) {
+    return next();
+  }
+
+  try {
+    const token = normalizeBearerToken(req.headers.authorization.split(" ")[1]);
+    if (!token) return next();
+    const decoded = resolveDecodedToken(token);
+    const user = await User.findById(decoded.id).select("-password");
+    if (user) {
+      req.user = user;
+    }
+  } catch (_error) {
+    // Keep this route public: ignore invalid token and continue.
+  }
+  return next();
+};
+
 const admin = (req, res, next) => {
   if (req.user && req.user.role === "admin") {
     next();
@@ -79,4 +101,4 @@ const isSeller = (req, res, next) => {
   }
 };
 
-module.exports = { protect, admin, isSeller };
+module.exports = { protect, optionalProtect, admin, isSeller };

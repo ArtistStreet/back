@@ -103,14 +103,17 @@ exports.getProducts = async (req, res) => {
     if (category) query.category = category;
     if (search) query.name = { $regex: search, $options: "i" };
 
-    if (
-      String(sellerOnly || "").toLowerCase() === "true" &&
-      req.user &&
-      req.user._id
-    ) {
+    const isSellerOnly = String(sellerOnly || "").toLowerCase() === "true";
+    if (isSellerOnly) {
+      if (!req.user || !req.user._id) {
+        return res
+          .status(401)
+          .json({ message: "Vui lòng đăng nhập để xem sản phẩm của người bán" });
+      }
       query.seller = req.user._id;
     }
-    if (sellerId) {
+
+    if (sellerId && !isSellerOnly) {
       query.seller = sellerId;
     }
 

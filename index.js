@@ -57,7 +57,9 @@ io.on("connection", (socket) => {
     const { userId } = payload || {};
     if (userId) {
       const nextUserId = String(userId);
-      const previousUserId = socket.data.userId ? String(socket.data.userId) : "";
+      const previousUserId = socket.data.userId
+        ? String(socket.data.userId)
+        : "";
       if (previousUserId && previousUserId !== nextUserId) {
         socket.leave(previousUserId);
         markUserDisconnected(previousUserId);
@@ -95,43 +97,69 @@ io.on("connection", (socket) => {
 });
 
 app.set("io", io);
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/api', apiRoutes);
-const { GoogleGenAI } = require('@google/genai');
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/api", apiRoutes);
+const { GoogleGenAI } = require("@google/genai");
 
-const ai = new GoogleGenAI({});
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
 
-app.post('/api/chat', async (req, res) => {
+app.post("/api/chat", async (req, res) => {
   try {
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(500).json({
+        success: false,
+        error: "Thiếu cấu hình GEMINI_API_KEY",
+      });
+    }
+
     const { message } = req.body;
 
     if (!message) {
-      return res.status(400).json({ error: 'Vui lòng nhập nội dung tin nhắn' });
+      return res.status(400).json({ error: "Vui lòng nhập nội dung tin nhắn" });
     }
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: "gemini-2.5-flash",
       contents: message,
     });
 
-    const reply = response.text;
+    const reply =
+      response?.text ||
+      response?.candidates?.[0]?.content?.parts
+        ?.map((part) => part?.text || "")
+        .join("")
+        .trim();
+    if (!reply) {
+      return res.status(502).json({
+        success: false,
+        error: "AI chưa trả về nội dung hợp lệ",
+      });
+    }
     res.json({ success: true, reply });
-
   } catch (error) {
-    console.error('Lỗi Gemini API:', error);
+    console.error("Lỗi Gemini API:", error);
     res.status(500).json({
       success: false,
-      error: 'Có lỗi xảy ra khi xử lý yêu cầu'
+      error: "Có lỗi xảy ra khi xử lý yêu cầu",
     });
   }
 });
 
-app.post('/api/chat/assistant', async (req, res) => {
+app.post("/api/chat/assistant", async (req, res) => {
   try {
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(500).json({
+        success: false,
+        error: "Thiếu cấu hình GEMINI_API_KEY",
+      });
+    }
+
     const { message } = req.body;
 
     if (!message) {
-      return res.status(400).json({ error: 'Vui lòng nhập nội dung tin nhắn' });
+      return res.status(400).json({ error: "Vui lòng nhập nội dung tin nhắn" });
     }
 
     const systemInstruction = `Bạn là trợ lý bán hàng thân thiện và chuyên nghiệp cho một cửa hàng online. 
@@ -140,27 +168,34 @@ app.post('/api/chat/assistant', async (req, res) => {
         Nếu không biết câu trả lời, hãy thành thật nói rằng bạn sẽ chuyển vấn đề cho nhân viên hỗ trợ.`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [
-        { role: 'user', parts: [{ text: message }] }
-      ],
+      model: "gemini-2.5-flash",
+      contents: [{ role: "user", parts: [{ text: message }] }],
       config: {
         systemInstruction: systemInstruction,
-      }
+      },
     });
 
-    const reply = response.text;
+    const reply =
+      response?.text ||
+      response?.candidates?.[0]?.content?.parts
+        ?.map((part) => part?.text || "")
+        .join("")
+        .trim();
+    if (!reply) {
+      return res.status(502).json({
+        success: false,
+        error: "AI chưa trả về nội dung hợp lệ",
+      });
+    }
     res.json({ success: true, reply });
-
   } catch (error) {
-    console.error('Lỗi Gemini API:', error);
+    console.error("Lỗi Gemini API:", error);
     res.status(500).json({
       success: false,
-      error: 'Có lỗi xảy ra khi xử lý yêu cầu'
+      error: "Có lỗi xảy ra khi xử lý yêu cầu",
     });
   }
 });
-
 
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI =
@@ -180,4 +215,3 @@ mongoose
       console.log(`Server (Database disconnected) đang chạy trên port ${PORT}`);
     });
   });
-

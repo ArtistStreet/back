@@ -7,7 +7,12 @@ const voucherController = require("../controllers/voucherController");
 const notificationController = require("../controllers/notificationController");
 const reviewController = require("../controllers/reviewController");
 const chatController = require("../controllers/chatController");
-const { protect, admin, isSeller } = require("../middleware/authMiddleware");
+const {
+  protect,
+  optionalProtect,
+  admin,
+  isSeller,
+} = require("../middleware/authMiddleware");
 const mongoose = require("mongoose");
 const cartController = require("../controllers/cartController");
 const multer = require("multer");
@@ -273,7 +278,7 @@ router.post(
     res.json({ videoUrl });
   },
 );
-router.get("/products", productController.getProducts);
+router.get("/products", optionalProtect, productController.getProducts);
 router.get("/products/:id", productController.getProductById);
 router.post("/products", protect, isSeller, productController.createProduct);
 router.put("/products/:id", protect, isSeller, productController.updateProduct);
