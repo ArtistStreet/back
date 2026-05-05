@@ -1,4 +1,3 @@
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -36,7 +35,7 @@ const normalizeId = (value) => {
     }
     return "";
 };
-const resolveSellerIdFromPartner = (partnerId) => __awaiter(void 0, void 0, void 0, function* () {
+const resolveSellerIdFromPartner = (partnerId) => __awaiter(this, void 0, void 0, function* () {
     const normalizedPartnerId = normalizeId(partnerId);
     if (!mongoose.Types.ObjectId.isValid(normalizedPartnerId)) {
         return null;
@@ -55,7 +54,7 @@ const resolveSellerIdFromPartner = (partnerId) => __awaiter(void 0, void 0, void
     }
     return null;
 });
-exports.getMessages = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.getMessages = (req, res) => __awaiter(this, void 0, void 0, function* () {
     var _a, _b, _c, _d;
     try {
         const { user, query } = req;
@@ -154,7 +153,7 @@ exports.getMessages = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         res.json([]);
     }
 });
-exports.sendMessage = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.sendMessage = (req, res) => __awaiter(this, void 0, void 0, function* () {
     var _a, _b;
     try {
         const { user, body } = req;
@@ -242,7 +241,7 @@ exports.sendMessage = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         res.json([]);
     }
 });
-exports.getConversations = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.getConversations = (req, res) => __awaiter(this, void 0, void 0, function* () {
     try {
         const { user } = req;
         if (!user) {

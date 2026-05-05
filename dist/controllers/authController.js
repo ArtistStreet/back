@@ -1,4 +1,3 @@
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -13,7 +12,7 @@ const jwt = require("jsonwebtoken");
 const path = require("path");
 const fs = require("fs");
 const avatarUploadDir = path.join(__dirname, "..", "..", "uploads", "avatars");
-const removeAvatarVariantsFromUrl = (urlValue) => __awaiter(void 0, void 0, void 0, function* () {
+const removeAvatarVariantsFromUrl = (urlValue) => __awaiter(this, void 0, void 0, function* () {
     if (!urlValue || typeof urlValue !== "string")
         return;
     try {
@@ -27,7 +26,7 @@ const removeAvatarVariantsFromUrl = (urlValue) => __awaiter(void 0, void 0, void
             return;
         const baseName = fileName.slice(0, -ext.length);
         const variants = [".avif", ".webp", ".jpg", ".jpeg", ".png"];
-        yield Promise.all(variants.map((variant) => __awaiter(void 0, void 0, void 0, function* () {
+        yield Promise.all(variants.map((variant) => __awaiter(this, void 0, void 0, function* () {
             const absPath = path.join(avatarUploadDir, `${baseName}${variant}`);
             try {
                 yield fs.promises.unlink(absPath);
@@ -41,7 +40,7 @@ const removeAvatarVariantsFromUrl = (urlValue) => __awaiter(void 0, void 0, void
         return;
     }
 });
-exports.register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.register = (req, res) => __awaiter(this, void 0, void 0, function* () {
     try {
         const { name, email, password } = req.body;
         const userExists = yield User.findOne({ email });
@@ -53,7 +52,7 @@ exports.register = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
             password,
             username: email.split("@")[0],
         });
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || "ShopBee_secret", { expiresIn: "7d" });
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || "shopee_secret", { expiresIn: "7d" });
         res.status(201).json({
             token,
             user: {
@@ -78,7 +77,7 @@ exports.register = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         res.status(500).json({ message: error.message });
     }
 });
-exports.login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.login = (req, res) => __awaiter(this, void 0, void 0, function* () {
     try {
         const { email, username, identifier, password } = req.body;
         const loginIdentifier = identifier || email || username;
@@ -95,7 +94,7 @@ exports.login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                 message: "Email / tên đăng nhập hoặc mật khẩu không đúng",
             });
         }
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || "ShopBee_secret", { expiresIn: "7d" });
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || "shopee_secret", { expiresIn: "7d" });
         res.json({
             token,
             user: {
@@ -120,7 +119,7 @@ exports.login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         res.status(500).json({ message: error.message });
     }
 });
-exports.getProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.getProfile = (req, res) => __awaiter(this, void 0, void 0, function* () {
     try {
         const user = yield User.findById(req.user._id).select("-password");
         if (!user) {
@@ -132,7 +131,7 @@ exports.getProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         res.status(500).json({ message: error.message });
     }
 });
-exports.updateProfile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.updateProfile = (req, res) => __awaiter(this, void 0, void 0, function* () {
     try {
         const user = yield User.findById(req.user._id);
         if (!user) {
@@ -182,7 +181,7 @@ exports.updateProfile = (req, res) => __awaiter(void 0, void 0, void 0, function
         if (shopAddress !== undefined)
             user.shopAddress = shopAddress;
         yield user.save();
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || "ShopBee_secret", { expiresIn: "7d" });
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || "shopee_secret", { expiresIn: "7d" });
         res.json({
             token,
             user: {
@@ -218,7 +217,7 @@ exports.updateProfile = (req, res) => __awaiter(void 0, void 0, void 0, function
         res.status(500).json({ message: error.message });
     }
 });
-exports.getAddresses = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.getAddresses = (req, res) => __awaiter(this, void 0, void 0, function* () {
     try {
         const user = yield User.findById(req.user._id).select("addresses");
         if (!user)
@@ -229,7 +228,7 @@ exports.getAddresses = (req, res) => __awaiter(void 0, void 0, void 0, function*
         res.status(500).json({ message: error.message });
     }
 });
-exports.addAddress = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.addAddress = (req, res) => __awaiter(this, void 0, void 0, function* () {
     try {
         const user = yield User.findById(req.user._id);
         if (!user)
@@ -257,7 +256,7 @@ exports.addAddress = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         res.status(500).json({ message: error.message });
     }
 });
-exports.updateAddress = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.updateAddress = (req, res) => __awaiter(this, void 0, void 0, function* () {
     try {
         const user = yield User.findById(req.user._id);
         if (!user)
@@ -288,7 +287,7 @@ exports.updateAddress = (req, res) => __awaiter(void 0, void 0, void 0, function
         res.status(500).json({ message: error.message });
     }
 });
-exports.becomeSeller = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.becomeSeller = (req, res) => __awaiter(this, void 0, void 0, function* () {
     try {
         const user = yield User.findById(req.user._id);
         if (!user)
@@ -298,7 +297,7 @@ exports.becomeSeller = (req, res) => __awaiter(void 0, void 0, void 0, function*
         }
         user.role = "seller";
         yield user.save();
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || "ShopBee_secret", { expiresIn: "7d" });
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || "shopee_secret", { expiresIn: "7d" });
         res.json({
             message: "Chúc mừng! Bạn đã trở thành người bán hàng",
             token,
@@ -324,7 +323,7 @@ exports.becomeSeller = (req, res) => __awaiter(void 0, void 0, void 0, function*
         res.status(500).json({ message: error.message });
     }
 });
-exports.deleteAddress = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.deleteAddress = (req, res) => __awaiter(this, void 0, void 0, function* () {
     try {
         const user = yield User.findById(req.user._id);
         if (!user)
@@ -345,7 +344,7 @@ exports.deleteAddress = (req, res) => __awaiter(void 0, void 0, void 0, function
         res.status(500).json({ message: error.message });
     }
 });
-exports.setDefaultAddress = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.setDefaultAddress = (req, res) => __awaiter(this, void 0, void 0, function* () {
     try {
         const user = yield User.findById(req.user._id);
         if (!user)
@@ -361,7 +360,7 @@ exports.setDefaultAddress = (req, res) => __awaiter(void 0, void 0, void 0, func
         res.status(500).json({ message: error.message });
     }
 });
-exports.changePassword = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.changePassword = (req, res) => __awaiter(this, void 0, void 0, function* () {
     try {
         const user = yield User.findById(req.user._id);
         if (!user)
@@ -384,7 +383,7 @@ exports.changePassword = (req, res) => __awaiter(void 0, void 0, void 0, functio
         }
         user.password = nextPassword;
         yield user.save();
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || "ShopBee_secret", { expiresIn: "7d" });
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || "shopee_secret", { expiresIn: "7d" });
         res.json({
             token,
             user: {
@@ -404,7 +403,7 @@ exports.changePassword = (req, res) => __awaiter(void 0, void 0, void 0, functio
         res.status(500).json({ message: error.message });
     }
 });
-exports.uploadAvatar = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.uploadAvatar = (req, res) => __awaiter(this, void 0, void 0, function* () {
     try {
         if (!req.file) {
             return res
@@ -429,7 +428,7 @@ exports.uploadAvatar = (req, res) => __awaiter(void 0, void 0, void 0, function*
         res.status(500).json({ message: error.message });
     }
 });
-exports.uploadShopAvatar = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.uploadShopAvatar = (req, res) => __awaiter(this, void 0, void 0, function* () {
     try {
         if (!req.file) {
             return res
@@ -454,7 +453,7 @@ exports.uploadShopAvatar = (req, res) => __awaiter(void 0, void 0, void 0, funct
         res.status(500).json({ message: error.message });
     }
 });
-exports.uploadShopCover = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.uploadShopCover = (req, res) => __awaiter(this, void 0, void 0, function* () {
     try {
         if (!req.file) {
             return res

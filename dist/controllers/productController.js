@@ -1,4 +1,3 @@
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -13,6 +12,22 @@ const path = require("path");
 const OpenAI = require("openai");
 const jwt = require("jsonwebtoken");
 const ChatMessage = require("../models/ChatMessage");
+const verifyTokenWithFallbacks = (token) => {
+    const candidateSecrets = [
+        process.env.JWT_SECRET,
+        "shopee_secret",
+        "ShopBee_secret",
+    ].filter(Boolean);
+    for (const secret of candidateSecrets) {
+        try {
+            return jwt.verify(token, secret);
+        }
+        catch (_error) {
+            continue;
+        }
+    }
+    throw new Error("Token verification failed");
+};
 const normalizeOptionGroups = (value) => {
     if (!Array.isArray(value))
         return [];
@@ -50,19 +65,7 @@ const normalizeDetailSpecs = (value) => {
 const openai = new OpenAI({
     apiKey: "1",
 });
-// Hàm lấy dữ liệu mock an toàn
-const getMockData = () => {
-    try {
-        // Thử require mockData từ frontend
-        const { PRODUCTS } = require("../../../src/utils/mockData");
-        return PRODUCTS;
-    }
-    catch (err) {
-        console.log("Không thể tải mockData từ frontend, dùng dữ liệu mặc định");
-        return [];
-    }
-};
-exports.getProducts = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.getProducts = (req, res) => __awaiter(this, void 0, void 0, function* () {
     try {
         const { category, search, sort, limit, page, sellerOnly, sellerId } = req.query;
         const lim = Number(limit);
@@ -70,32 +73,25 @@ exports.getProducts = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         const pg = Math.max(1, Number(page) || 1);
         const skip = hasLimit ? (pg - 1) * lim : 0;
         if (require("mongoose").connection.readyState !== 1) {
-            const PRODUCTS = getMockData();
-            let filtered = [...PRODUCTS];
-            if (category)
-                filtered = filtered.filter((p) => p.category === category);
-            if (search)
-                filtered = filtered.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()));
-            if (sort === "sold") {
-                filtered.sort((a, b) => (b.sold || 0) - (a.sold || 0));
-            }
-            else if (sort === "new") {
-                filtered.sort((a, b) => String(b.id).localeCompare(String(a.id)));
-            }
-            const limited = hasLimit ? filtered.slice(skip, skip + lim) : filtered;
-            return res.json(limited.map((p) => (Object.assign(Object.assign({}, p), { _id: p.id.toString() }))));
+            return res.status(503).json({
+                message: "Mất kết nối cơ sở dữ liệu. Vui lòng thử lại sau.",
+            });
         }
         const query = {};
         if (category)
             query.category = category;
         if (search)
             query.name = { $regex: search, $options: "i" };
-        if (String(sellerOnly || "").toLowerCase() === "true" &&
-            req.user &&
-            req.user._id) {
+        const isSellerOnly = String(sellerOnly || "").toLowerCase() === "true";
+        if (isSellerOnly) {
+            if (!req.user || !req.user._id) {
+                return res
+                    .status(401)
+                    .json({ message: "Vui lòng đăng nhập để xem sản phẩm của người bán" });
+            }
             query.seller = req.user._id;
         }
-        if (sellerId) {
+        if (sellerId && !isSellerOnly) {
             query.seller = sellerId;
         }
         const sortOption = sort === "sold" ? { sold: -1 } : sort === "new" ? { createdAt: -1 } : {};
@@ -132,14 +128,12 @@ exports.getProducts = (req, res) => __awaiter(void 0, void 0, void 0, function* 
         res.status(500).json({ message: error.message });
     }
 });
-exports.getProductById = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.getProductById = (req, res) => __awaiter(this, void 0, void 0, function* () {
     try {
         if (require("mongoose").connection.readyState !== 1) {
-            const PRODUCTS = getMockData();
-            const product = PRODUCTS.find((p) => p.id.toString() === req.params.id.toString());
-            if (!product)
-                return res.status(404).json({ message: "Sản phẩm không tồn tại" });
-            return res.json(Object.assign(Object.assign({}, product), { _id: product.id.toString() }));
+            return res.status(503).json({
+                message: "Mất kết nối cơ sở dữ liệu. Vui lòng thử lại sau.",
+            });
         }
         const product = yield Product.findById(req.params.id)
             .populate("seller", "shopName name shopDescription shopAvatar shopCover shopAddress")
@@ -168,7 +162,7 @@ exports.getProductById = (req, res) => __awaiter(void 0, void 0, void 0, functio
         res.status(500).json({ message: error.message });
     }
 });
-exports.createProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.createProduct = (req, res) => __awaiter(this, void 0, void 0, function* () {
     try {
         if (require("mongoose").connection.readyState !== 1) {
             return res
@@ -223,7 +217,7 @@ exports.createProduct = (req, res) => __awaiter(void 0, void 0, void 0, function
         res.status(400).json({ message: error.message });
     }
 });
-exports.updateProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.updateProduct = (req, res) => __awaiter(this, void 0, void 0, function* () {
     try {
         if (require("mongoose").connection.readyState !== 1) {
             return res
@@ -297,7 +291,7 @@ exports.updateProduct = (req, res) => __awaiter(void 0, void 0, void 0, function
         res.status(400).json({ message: error.message });
     }
 });
-exports.deleteProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.deleteProduct = (req, res) => __awaiter(this, void 0, void 0, function* () {
     try {
         if (require("mongoose").connection.readyState !== 1) {
             return res.status(503).json({ message: "Cơ sở dữ liệu chưa sẵn sàng" });
@@ -323,7 +317,7 @@ exports.deleteProduct = (req, res) => __awaiter(void 0, void 0, void 0, function
         res.status(500).json({ message: error.message });
     }
 });
-exports.chatbotResponse = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.chatbotResponse = (req, res) => __awaiter(this, void 0, void 0, function* () {
     const { message, partnerId } = req.body || {};
     if (!message || typeof message !== "string") {
         return res.status(400).json({ message: "Thiếu nội dung tin nhắn" });
@@ -370,7 +364,7 @@ exports.chatbotResponse = (req, res) => __awaiter(void 0, void 0, void 0, functi
     if (auth && auth.startsWith("Bearer ")) {
         const token = auth.split(" ")[1];
         try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET || "ShopBee_secret");
+            const decoded = verifyTokenWithFallbacks(token);
             userId = decoded.id;
         }
         catch (err) {

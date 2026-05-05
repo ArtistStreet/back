@@ -61,18 +61,6 @@ const openai = new OpenAI({
   apiKey: "1",
 });
 
-// Hàm lấy dữ liệu mock an toàn
-const getMockData = () => {
-  try {
-    // Thử require mockData từ frontend
-    const { PRODUCTS } = require("../../../src/utils/mockData");
-    return PRODUCTS;
-  } catch (err) {
-    console.log("Không thể tải mockData từ frontend, dùng dữ liệu mặc định");
-    return [];
-  }
-};
-
 exports.getProducts = async (req, res) => {
   try {
     const { category, search, sort, limit, page, sellerOnly, sellerId } =
@@ -83,20 +71,9 @@ exports.getProducts = async (req, res) => {
     const skip = hasLimit ? (pg - 1) * lim : 0;
 
     if (require("mongoose").connection.readyState !== 1) {
-      const PRODUCTS = getMockData();
-      let filtered = [...PRODUCTS];
-      if (category) filtered = filtered.filter((p) => p.category === category);
-      if (search)
-        filtered = filtered.filter((p) =>
-          p.name.toLowerCase().includes(search.toLowerCase()),
-        );
-      if (sort === "sold") {
-        filtered.sort((a, b) => (b.sold || 0) - (a.sold || 0));
-      } else if (sort === "new") {
-        filtered.sort((a, b) => String(b.id).localeCompare(String(a.id)));
-      }
-      const limited = hasLimit ? filtered.slice(skip, skip + lim) : filtered;
-      return res.json(limited.map((p) => ({ ...p, _id: p.id.toString() })));
+      return res.status(503).json({
+        message: "Mất kết nối cơ sở dữ liệu. Vui lòng thử lại sau.",
+      });
     }
 
     const query = {};
@@ -168,13 +145,9 @@ exports.getProducts = async (req, res) => {
 exports.getProductById = async (req, res) => {
   try {
     if (require("mongoose").connection.readyState !== 1) {
-      const PRODUCTS = getMockData();
-      const product = PRODUCTS.find(
-        (p) => p.id.toString() === req.params.id.toString(),
-      );
-      if (!product)
-        return res.status(404).json({ message: "Sản phẩm không tồn tại" });
-      return res.json({ ...product, _id: product.id.toString() });
+      return res.status(503).json({
+        message: "Mất kết nối cơ sở dữ liệu. Vui lòng thử lại sau.",
+      });
     }
 
     const product = await Product.findById(req.params.id)

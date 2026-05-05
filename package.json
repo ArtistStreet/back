@@ -7,6 +7,7 @@
     "dev": "node --watch index.js",
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
+    "clear:products": "node src/seeds/clearProducts.js",
     "seed:products": "node src/seeds/seedProducts.js",
     "seed:admin": "node src/seeds/seedAdmin.js"
   },

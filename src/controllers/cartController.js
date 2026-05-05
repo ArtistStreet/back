@@ -106,12 +106,42 @@ exports.updateItem = async (req, res) => {
 };
 
 exports.removeItem = async (req, res) => {
-  const productId = req.params.productId;
-  let cart = await Cart.findOne({ user: req.user._id });
-  if (!cart) return res.status(404).json({ message: 'Cart not found' });
-  cart.items = cart.items.filter((i) => String(i.product) !== String(productId));
-  await cart.save();
-  res.json(cart);
+  const productId = String(req.params.productId || "")
+    .trim()
+    .replace(/^"+|"+$/g, "");
+  if (!productId) {
+    return res.status(400).json({ message: "Thiếu productId" });
+  }
+
+  const cart = await Cart.findOne({ user: req.user._id });
+  if (!cart) return res.status(404).json({ message: "Cart not found" });
+
+  const beforeCount = cart.items.length;
+  await Cart.updateOne(
+    { user: req.user._id },
+    { $pull: { items: { product: productId } } },
+  );
+
+  const updatedCart = await Cart.findOne({ user: req.user._id }).populate(
+    "items.product",
+    "stock",
+  );
+  const afterCount = (updatedCart?.items || []).length;
+  if (beforeCount === afterCount) {
+    return res.status(404).json({ message: "Item not found in cart" });
+  }
+
+  const items = (updatedCart.items || []).map((item) => {
+    const obj = item.toObject();
+    if (item.product && typeof item.product === "object") {
+      obj.stock = item.product.stock;
+      obj.product = item.product._id;
+    } else {
+      obj.stock = 0;
+    }
+    return obj;
+  });
+  res.json({ ...updatedCart.toObject(), items });
 };
 
 exports.clearCart = async (req, res) => {
@@ -122,7 +152,21 @@ exports.clearCart = async (req, res) => {
     cart.items = [];
     await cart.save();
   }
-  res.json(cart);
+  const updatedCart = await Cart.findById(cart._id).populate(
+    "items.product",
+    "stock",
+  );
+  const items = (updatedCart.items || []).map((item) => {
+    const obj = item.toObject();
+    if (item.product && typeof item.product === "object") {
+      obj.stock = item.product.stock;
+      obj.product = item.product._id;
+    } else {
+      obj.stock = 0;
+    }
+    return obj;
+  });
+  res.json({ ...updatedCart.toObject(), items });
 };
 
 

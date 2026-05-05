@@ -211,7 +211,5 @@ mongoose
   })
   .catch((err) => {
     console.error("Lỗi kết nối MongoDB:", err);
-    server.listen(PORT, () => {
-      console.log(`Server (Database disconnected) đang chạy trên port ${PORT}`);
-    });
+    process.exit(1);
   });

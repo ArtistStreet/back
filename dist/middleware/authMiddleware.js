@@ -1,4 +1,3 @@
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -10,14 +9,55 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
-const protect = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+const normalizeBearerToken = (rawValue) => {
+    if (!rawValue)
+        return "";
+    const normalized = String(rawValue)
+        .trim()
+        .replace(/^"+|"+$/g, "");
+    if (!normalized || normalized === "null" || normalized === "undefined") {
+        return "";
+    }
+    return normalized;
+};
+const resolveDecodedToken = (token) => {
+    const legacySecrets = String(process.env.JWT_LEGACY_SECRETS || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+    const candidateSecrets = [
+        process.env.JWT_SECRET,
+        ...legacySecrets,
+        "shopee_secret",
+        "ShopBee_secret",
+    ].filter(Boolean);
+    let lastError = null;
+    for (const secret of candidateSecrets) {
+        try {
+            return jwt.verify(token, secret);
+        }
+        catch (error) {
+            lastError = error;
+        }
+    }
+    throw lastError || new Error("Token verification failed");
+};
+const protect = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
     let token;
     if (req.headers.authorization &&
         req.headers.authorization.startsWith("Bearer")) {
         try {
-            token = req.headers.authorization.split(" ")[1];
-            const decoded = jwt.verify(token, process.env.JWT_SECRET || "ShopBee_secret");
+            token = normalizeBearerToken(req.headers.authorization.split(" ")[1]);
+            if (!token) {
+                return res.status(401).json({ message: "Not authorized, no token" });
+            }
+            const decoded = resolveDecodedToken(token);
             req.user = yield User.findById(decoded.id).select("-password");
+            if (!req.user) {
+                return res
+                    .status(401)
+                    .json({ message: "Not authorized, user missing" });
+            }
             next();
         }
         catch (error) {
@@ -28,6 +68,26 @@ const protect = (req, res, next) => __awaiter(void 0, void 0, void 0, function* 
     else {
         return res.status(401).json({ message: "Not authorized, no token" });
     }
+});
+const optionalProtect = (req, _res, next) => __awaiter(this, void 0, void 0, function* () {
+    if (!req.headers.authorization ||
+        !req.headers.authorization.startsWith("Bearer")) {
+        return next();
+    }
+    try {
+        const token = normalizeBearerToken(req.headers.authorization.split(" ")[1]);
+        if (!token)
+            return next();
+        const decoded = resolveDecodedToken(token);
+        const user = yield User.findById(decoded.id).select("-password");
+        if (user) {
+            req.user = user;
+        }
+    }
+    catch (_error) {
+        // Keep this route public: ignore invalid token and continue.
+    }
+    return next();
 });
 const admin = (req, res, next) => {
     if (req.user && req.user.role === "admin") {
@@ -45,4 +105,4 @@ const isSeller = (req, res, next) => {
         res.status(401).json({ message: "Not authorized as a seller" });
     }
 };
-module.exports = { protect, admin, isSeller };
+module.exports = { protect, optionalProtect, admin, isSeller };

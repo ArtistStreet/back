@@ -1,4 +1,3 @@
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -17,7 +16,7 @@ const voucherController = require("../controllers/voucherController");
 const notificationController = require("../controllers/notificationController");
 const reviewController = require("../controllers/reviewController");
 const chatController = require("../controllers/chatController");
-const { protect, admin, isSeller } = require("../middleware/authMiddleware");
+const { protect, optionalProtect, admin, isSeller, } = require("../middleware/authMiddleware");
 const mongoose = require("mongoose");
 const cartController = require("../controllers/cartController");
 const multer = require("multer");
@@ -107,7 +106,7 @@ const reviewMediaUpload = multer({
 ]);
 const optimizeUploadedImage = (options) => {
     const { targetDir, filenamePrefix, maxWidth, maxHeight } = options;
-    return (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    return (req, res, next) => __awaiter(this, void 0, void 0, function* () {
         if (!req.file) {
             res.status(400).json({ message: "No file uploaded" });
             return;
@@ -207,7 +206,7 @@ router.post("/products/upload-video", protect, isSeller, handleMulterUpload(prod
     const videoUrl = new URL(`/uploads/products/${req.file.filename}`, baseUrl).toString();
     res.json({ videoUrl });
 });
-router.get("/products", productController.getProducts);
+router.get("/products", optionalProtect, productController.getProducts);
 router.get("/products/:id", productController.getProductById);
 router.post("/products", protect, isSeller, productController.createProduct);
 router.put("/products/:id", protect, isSeller, productController.updateProduct);
