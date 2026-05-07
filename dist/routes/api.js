@@ -240,41 +240,29 @@ router.post("/reviews/upload-media", protect, handleMulterUpload(reviewMediaUplo
     res.json({ images, videos });
 });
 router.post("/reviews", protect, reviewController.createReview);
-router.put("/reviews/:id", protect, reviewController.updateReview);
-router.post("/reviews/:id/comments", protect, reviewController.addReviewComment);
-router.put("/reviews/:id/reply", protect, isSeller, reviewController.replyReview);
-router.get("/products/:productId/reviews", reviewController.getProductReviews);
-router.get("/reviews/mine", protect, isSeller, reviewController.getSellerReviews);
-router.get("/reviews", protect, admin, reviewController.getAllReviews);
-router.delete("/reviews/:id", protect, admin, reviewController.deleteReview);
-router.post("/chatbot", productController.chatbotResponse);
+router.put('/reviews/:id', protect, reviewController.updateReview);
+router.post('/reviews/:id/comments', protect, reviewController.addReviewComment);
+router.put('/reviews/:id/reply', protect, isSeller, reviewController.replyReview);
+router.get('/products/:productId/reviews', reviewController.getProductReviews);
+router.get('/reviews/mine', protect, isSeller, reviewController.getSellerReviews);
+router.get('/reviews', protect, admin, reviewController.getAllReviews);
+router.delete('/reviews/:id', protect, admin, reviewController.deleteReview);
+router.post('/chatbot', productController.chatbotResponse);
 // Chat routes
-router.get("/chat/messages", protect, chatController.getMessages);
-router.post("/chat/messages", protect, chatController.sendMessage);
-router.get("/chat/conversations", protect, chatController.getConversations);
+router.get('/chat/messages', protect, chatController.getMessages);
+router.post('/chat/messages', protect, chatController.sendMessage);
+router.get('/chat/conversations', protect, chatController.getConversations);
+router.delete('/chat/conversations/:partnerId', protect, chatController.deleteConversation);
 // Voucher routes
-router.get("/vouchers/my", protect, voucherController.getMyVouchers);
-router.get("/vouchers/discover", protect, voucherController.getDiscover);
-router.get("/vouchers/history", protect, voucherController.getHistory);
-router.post("/vouchers/add", protect, voucherController.addVoucher);
+router.get('/vouchers/my', protect, voucherController.getMyVouchers);
+router.get('/vouchers/discover', protect, voucherController.getDiscover);
+router.get('/vouchers/history', protect, voucherController.getHistory);
+router.post('/vouchers/add', protect, voucherController.addVoucher);
 // Health check - DB connection status
-router.get("/health/db", (_req, res) => {
+router.get('/health/db', (_req, res) => {
     const conn = mongoose.connection;
-    const state = conn.readyState; // 0=disconnected,1=connected,2=connecting,3=disconnecting
-    const stateText = state === 1
-        ? "connected"
-        : state === 2
-            ? "connecting"
-            : state === 3
-                ? "disconnecting"
-                : "disconnected";
-    res.json({
-        connected: state === 1,
-        state,
-        stateText,
-        name: conn.name || null,
-        host: conn.host || null,
-        port: conn.port || null,
-    });
+    const state = conn.readyState;
+    const stateText = state === 1 ? 'connected' : state === 2 ? 'connecting' : state === 3 ? 'disconnecting' : 'disconnected';
+    res.json({ connected: state === 1, state, stateText, name: conn.name || null, host: conn.host || null, port: conn.port || null });
 });
 module.exports = router;

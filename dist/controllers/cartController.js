@@ -9,15 +9,28 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
-exports.getCart = (req, res) => __awaiter(this, void 0, void 0, function* () {
-    let cart = yield Cart.findOne({ user: req.user._id }).populate("items.product", "stock");
-    if (!cart) {
-        cart = yield Cart.create({ user: req.user._id, items: [] });
+const CART_PRODUCT_FIELDS = "stock name image price";
+const loadCartWithProducts = (userId) => Cart.findOne({ user: userId }).populate("items.product", CART_PRODUCT_FIELDS);
+const pruneMissingProducts = (cart) => __awaiter(this, void 0, void 0, function* () {
+    if (!cart || !Array.isArray(cart.items))
+        return cart;
+    const kept = cart.items.filter((item) => item.product && typeof item.product === "object");
+    if (kept.length !== cart.items.length) {
+        cart.items = kept;
+        yield cart.save();
+        return loadCartWithProducts(cart.user);
     }
+    return cart;
+});
+const toCartResponse = (cart) => {
     const items = (cart.items || []).map((item) => {
         const obj = item.toObject();
         if (item.product && typeof item.product === "object") {
             obj.stock = item.product.stock;
+            obj.name = item.product.name || obj.name;
+            obj.image = item.product.image || obj.image;
+            obj.price =
+                typeof item.product.price === "number" ? item.product.price : obj.price;
             obj.product = item.product._id;
         }
         else {
@@ -25,7 +38,16 @@ exports.getCart = (req, res) => __awaiter(this, void 0, void 0, function* () {
         }
         return obj;
     });
-    res.json(Object.assign(Object.assign({}, cart.toObject()), { items }));
+    return Object.assign(Object.assign({}, cart.toObject()), { items });
+};
+exports.getCart = (req, res) => __awaiter(this, void 0, void 0, function* () {
+    let cart = yield loadCartWithProducts(req.user._id);
+    if (!cart) {
+        cart = yield Cart.create({ user: req.user._id, items: [] });
+        cart = yield loadCartWithProducts(req.user._id);
+    }
+    cart = yield pruneMissingProducts(cart);
+    res.json(toCartResponse(cart));
 });
 exports.addItem = (req, res) => __awaiter(this, void 0, void 0, function* () {
     const { productId, quantity } = req.body;
@@ -51,20 +73,9 @@ exports.addItem = (req, res) => __awaiter(this, void 0, void 0, function* () {
         });
     }
     yield cart.save();
-    // Return updated cart with stock
-    const updatedCart = yield Cart.findById(cart._id).populate("items.product", "stock");
-    const items = (updatedCart.items || []).map((item) => {
-        const obj = item.toObject();
-        if (item.product && typeof item.product === "object") {
-            obj.stock = item.product.stock;
-            obj.product = item.product._id;
-        }
-        else {
-            obj.stock = 0;
-        }
-        return obj;
-    });
-    res.status(200).json(Object.assign(Object.assign({}, updatedCart.toObject()), { items }));
+    let updatedCart = yield loadCartWithProducts(req.user._id);
+    updatedCart = yield pruneMissingProducts(updatedCart);
+    res.status(200).json(toCartResponse(updatedCart));
 });
 exports.updateItem = (req, res) => __awaiter(this, void 0, void 0, function* () {
     const productId = req.params.productId;
@@ -92,19 +103,9 @@ exports.updateItem = (req, res) => __awaiter(this, void 0, void 0, function* () 
         cart.items[idx].quantity = qty;
     }
     yield cart.save();
-    const updatedCart = yield Cart.findById(cart._id).populate("items.product", "stock");
-    const items = (updatedCart.items || []).map((item) => {
-        const obj = item.toObject();
-        if (item.product && typeof item.product === "object") {
-            obj.stock = item.product.stock;
-            obj.product = item.product._id;
-        }
-        else {
-            obj.stock = 0;
-        }
-        return obj;
-    });
-    res.json(Object.assign(Object.assign({}, updatedCart.toObject()), { items }));
+    let updatedCart = yield loadCartWithProducts(req.user._id);
+    updatedCart = yield pruneMissingProducts(updatedCart);
+    res.json(toCartResponse(updatedCart));
 });
 exports.removeItem = (req, res) => __awaiter(this, void 0, void 0, function* () {
     const productId = String(req.params.productId || "")
@@ -118,23 +119,13 @@ exports.removeItem = (req, res) => __awaiter(this, void 0, void 0, function* () 
         return res.status(404).json({ message: "Cart not found" });
     const beforeCount = cart.items.length;
     yield Cart.updateOne({ user: req.user._id }, { $pull: { items: { product: productId } } });
-    const updatedCart = yield Cart.findOne({ user: req.user._id }).populate("items.product", "stock");
+    let updatedCart = yield loadCartWithProducts(req.user._id);
+    updatedCart = yield pruneMissingProducts(updatedCart);
     const afterCount = ((updatedCart === null || updatedCart === void 0 ? void 0 : updatedCart.items) || []).length;
     if (beforeCount === afterCount) {
         return res.status(404).json({ message: "Item not found in cart" });
     }
-    const items = (updatedCart.items || []).map((item) => {
-        const obj = item.toObject();
-        if (item.product && typeof item.product === "object") {
-            obj.stock = item.product.stock;
-            obj.product = item.product._id;
-        }
-        else {
-            obj.stock = 0;
-        }
-        return obj;
-    });
-    res.json(Object.assign(Object.assign({}, updatedCart.toObject()), { items }));
+    res.json(toCartResponse(updatedCart));
 });
 exports.clearCart = (req, res) => __awaiter(this, void 0, void 0, function* () {
     let cart = yield Cart.findOne({ user: req.user._id });
@@ -145,17 +136,7 @@ exports.clearCart = (req, res) => __awaiter(this, void 0, void 0, function* () {
         cart.items = [];
         yield cart.save();
     }
-    const updatedCart = yield Cart.findById(cart._id).populate("items.product", "stock");
-    const items = (updatedCart.items || []).map((item) => {
-        const obj = item.toObject();
-        if (item.product && typeof item.product === "object") {
-            obj.stock = item.product.stock;
-            obj.product = item.product._id;
-        }
-        else {
-            obj.stock = 0;
-        }
-        return obj;
-    });
-    res.json(Object.assign(Object.assign({}, updatedCart.toObject()), { items }));
+    let updatedCart = yield loadCartWithProducts(req.user._id);
+    updatedCart = yield pruneMissingProducts(updatedCart);
+    res.json(toCartResponse(updatedCart));
 });

@@ -108,6 +108,12 @@ exports.getMessages = (req, res) => __awaiter(this, void 0, void 0, function* ()
                 isAI: (_b = m.isAI) !== null && _b !== void 0 ? _b : false,
                 sellerReadAt: m.sellerReadAt || null,
                 userReadAt: m.userReadAt || null,
+                product: m.product && m.product.productId ? {
+                    productId: String(m.product.productId),
+                    name: m.product.name || "",
+                    image: m.product.image || "",
+                    price: m.product.price || 0,
+                } : null,
             });
         });
         const otherSender = isSupport ? "customer" : "seller";
@@ -195,12 +201,17 @@ exports.sendMessage = (req, res) => __awaiter(this, void 0, void 0, function* ()
         if (!sellerUser || !["seller", "admin"].includes(sellerUser.role)) {
             return res.status(400).json({ message: "Seller không hợp lệ" });
         }
-        const message = yield ChatMessage.create({
-            customer: new mongoose.Types.ObjectId(customerId),
-            seller: new mongoose.Types.ObjectId(sellerId),
-            sender: isSupport ? "seller" : "customer",
-            text,
-        });
+        // Handle product attachment
+        let productData = undefined;
+        if (body.product && body.product.productId) {
+            productData = {
+                productId: new mongoose.Types.ObjectId(body.product.productId),
+                name: body.product.name || "",
+                image: body.product.image || "",
+                price: body.product.price || 0,
+            };
+        }
+        const message = yield ChatMessage.create(Object.assign({ customer: new mongoose.Types.ObjectId(customerId), seller: new mongoose.Types.ObjectId(sellerId), sender: isSupport ? "seller" : "customer", text }, (productData ? { product: productData } : {})));
         const payload = {
             id: String(message._id),
             text: message.text,
@@ -209,6 +220,12 @@ exports.sendMessage = (req, res) => __awaiter(this, void 0, void 0, function* ()
             isRead: false,
             customerId,
             sellerId,
+            product: productData ? {
+                productId: String(productData.productId),
+                name: productData.name,
+                image: productData.image,
+                price: productData.price,
+            } : null,
         };
         const io = req.app.get("io");
         if (io) {
@@ -287,28 +304,69 @@ exports.getConversations = (req, res) => __awaiter(this, void 0, void 0, functio
         ]);
         const partnerIds = summaries.map((s) => String(isSupport ? s._id.customer : s._id));
         const partners = yield User.find({ _id: { $in: partnerIds } })
-            .select("name email avatar")
+            .select("name email avatar shopName")
             .lean();
         const partnerMap = new Map(partners.map((p) => [String(p._id), p]));
         const result = summaries.map((s) => {
-            const customerId = String(isSupport ? s._id.customer : s._id);
-            const sellerId = String(isSupport ? s._id.seller : user._id);
-            const info = partnerMap.get(customerId);
-            return {
-                partnerId: customerId,
-                sellerId,
-                name: (info === null || info === void 0 ? void 0 : info.name) || "Người dùng",
-                email: (info === null || info === void 0 ? void 0 : info.email) || "",
-                avatar: (info === null || info === void 0 ? void 0 : info.avatar) || "",
-                lastMessage: s.lastMessage,
-                lastSender: s.lastSender,
-                lastAt: s.lastAt,
-                unreadCount: s.unreadCount || 0,
-            };
+            if (isSupport) {
+                // Seller/Admin view: partner is the customer
+                const customerId = String(s._id.customer);
+                const sellerId = String(s._id.seller);
+                const info = partnerMap.get(customerId);
+                return {
+                    partnerId: customerId,
+                    sellerId,
+                    name: (info === null || info === void 0 ? void 0 : info.name) || "Người dùng",
+                    email: (info === null || info === void 0 ? void 0 : info.email) || "",
+                    avatar: (info === null || info === void 0 ? void 0 : info.avatar) || "",
+                    lastMessage: s.lastMessage,
+                    lastSender: s.lastSender,
+                    lastAt: s.lastAt,
+                    unreadCount: s.unreadCount || 0,
+                };
+            }
+            else {
+                // Customer view: partner is the seller
+                const sellerId = String(s._id);
+                const info = partnerMap.get(sellerId);
+                return {
+                    partnerId: sellerId,
+                    sellerId,
+                    name: (info === null || info === void 0 ? void 0 : info.shopName) || (info === null || info === void 0 ? void 0 : info.name) || "Shop",
+                    email: (info === null || info === void 0 ? void 0 : info.email) || "",
+                    avatar: (info === null || info === void 0 ? void 0 : info.avatar) || "",
+                    lastMessage: s.lastMessage,
+                    lastSender: s.lastSender,
+                    lastAt: s.lastAt,
+                    unreadCount: s.unreadCount || 0,
+                };
+            }
         });
         res.json(result);
     }
     catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+exports.deleteConversation = (req, res) => __awaiter(this, void 0, void 0, function* () {
+    try {
+        const { user } = req;
+        if (!user) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+        const partnerId = normalizeId(req.params.partnerId);
+        if (!partnerId || !mongoose.Types.ObjectId.isValid(partnerId)) {
+            return res.status(400).json({ message: "partnerId không hợp lệ" });
+        }
+        const isSupport = user.role === "admin" || user.role === "seller";
+        const filter = isSupport
+            ? { seller: user._id, customer: new mongoose.Types.ObjectId(partnerId) }
+            : { customer: user._id, seller: new mongoose.Types.ObjectId(partnerId) };
+        const result = yield ChatMessage.deleteMany(filter);
+        res.json({ success: true, deletedCount: result.deletedCount });
+    }
+    catch (error) {
+        console.error("deleteConversation failed", error);
         res.status(500).json({ message: error.message });
     }
 });

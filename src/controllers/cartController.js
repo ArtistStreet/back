@@ -1,22 +1,50 @@
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
 
-exports.getCart = async (req, res) => {
-  let cart = await Cart.findOne({ user: req.user._id }).populate("items.product", "stock");
-  if (!cart) {
-    cart = await Cart.create({ user: req.user._id, items: [] });
+const CART_PRODUCT_FIELDS = "stock name image price";
+
+const loadCartWithProducts = (userId) =>
+  Cart.findOne({ user: userId }).populate("items.product", CART_PRODUCT_FIELDS);
+
+const pruneMissingProducts = async (cart) => {
+  if (!cart || !Array.isArray(cart.items)) return cart;
+  const kept = cart.items.filter(
+    (item) => item.product && typeof item.product === "object",
+  );
+  if (kept.length !== cart.items.length) {
+    cart.items = kept;
+    await cart.save();
+    return loadCartWithProducts(cart.user);
   }
+  return cart;
+};
+
+const toCartResponse = (cart) => {
   const items = (cart.items || []).map((item) => {
     const obj = item.toObject();
     if (item.product && typeof item.product === "object") {
       obj.stock = item.product.stock;
+      obj.name = item.product.name || obj.name;
+      obj.image = item.product.image || obj.image;
+      obj.price =
+        typeof item.product.price === "number" ? item.product.price : obj.price;
       obj.product = item.product._id;
     } else {
       obj.stock = 0;
     }
     return obj;
   });
-  res.json({ ...cart.toObject(), items });
+  return { ...cart.toObject(), items };
+};
+
+exports.getCart = async (req, res) => {
+  let cart = await loadCartWithProducts(req.user._id);
+  if (!cart) {
+    cart = await Cart.create({ user: req.user._id, items: [] });
+    cart = await loadCartWithProducts(req.user._id);
+  }
+  cart = await pruneMissingProducts(cart);
+  res.json(toCartResponse(cart));
 };
 
 exports.addItem = async (req, res) => {
@@ -44,22 +72,9 @@ exports.addItem = async (req, res) => {
     });
   }
   await cart.save();
-  // Return updated cart with stock
-  const updatedCart = await Cart.findById(cart._id).populate(
-    "items.product",
-    "stock",
-  );
-  const items = (updatedCart.items || []).map((item) => {
-    const obj = item.toObject();
-    if (item.product && typeof item.product === "object") {
-      obj.stock = item.product.stock;
-      obj.product = item.product._id;
-    } else {
-      obj.stock = 0;
-    }
-    return obj;
-  });
-  res.status(200).json({ ...updatedCart.toObject(), items });
+  let updatedCart = await loadCartWithProducts(req.user._id);
+  updatedCart = await pruneMissingProducts(updatedCart);
+  res.status(200).json(toCartResponse(updatedCart));
 };
 
 exports.updateItem = async (req, res) => {
@@ -88,21 +103,9 @@ exports.updateItem = async (req, res) => {
     cart.items[idx].quantity = qty;
   }
   await cart.save();
-  const updatedCart = await Cart.findById(cart._id).populate(
-    "items.product",
-    "stock",
-  );
-  const items = (updatedCart.items || []).map((item) => {
-    const obj = item.toObject();
-    if (item.product && typeof item.product === "object") {
-      obj.stock = item.product.stock;
-      obj.product = item.product._id;
-    } else {
-      obj.stock = 0;
-    }
-    return obj;
-  });
-  res.json({ ...updatedCart.toObject(), items });
+  let updatedCart = await loadCartWithProducts(req.user._id);
+  updatedCart = await pruneMissingProducts(updatedCart);
+  res.json(toCartResponse(updatedCart));
 };
 
 exports.removeItem = async (req, res) => {
@@ -122,26 +125,13 @@ exports.removeItem = async (req, res) => {
     { $pull: { items: { product: productId } } },
   );
 
-  const updatedCart = await Cart.findOne({ user: req.user._id }).populate(
-    "items.product",
-    "stock",
-  );
+  let updatedCart = await loadCartWithProducts(req.user._id);
+  updatedCart = await pruneMissingProducts(updatedCart);
   const afterCount = (updatedCart?.items || []).length;
   if (beforeCount === afterCount) {
     return res.status(404).json({ message: "Item not found in cart" });
   }
-
-  const items = (updatedCart.items || []).map((item) => {
-    const obj = item.toObject();
-    if (item.product && typeof item.product === "object") {
-      obj.stock = item.product.stock;
-      obj.product = item.product._id;
-    } else {
-      obj.stock = 0;
-    }
-    return obj;
-  });
-  res.json({ ...updatedCart.toObject(), items });
+  res.json(toCartResponse(updatedCart));
 };
 
 exports.clearCart = async (req, res) => {
@@ -152,21 +142,9 @@ exports.clearCart = async (req, res) => {
     cart.items = [];
     await cart.save();
   }
-  const updatedCart = await Cart.findById(cart._id).populate(
-    "items.product",
-    "stock",
-  );
-  const items = (updatedCart.items || []).map((item) => {
-    const obj = item.toObject();
-    if (item.product && typeof item.product === "object") {
-      obj.stock = item.product.stock;
-      obj.product = item.product._id;
-    } else {
-      obj.stock = 0;
-    }
-    return obj;
-  });
-  res.json({ ...updatedCart.toObject(), items });
+  let updatedCart = await loadCartWithProducts(req.user._id);
+  updatedCart = await pruneMissingProducts(updatedCart);
+  res.json(toCartResponse(updatedCart));
 };
 
 

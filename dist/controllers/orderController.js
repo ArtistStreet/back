@@ -14,7 +14,7 @@ const Notification = require("../models/Notification");
 const { __catalogForServer } = require("./voucherController");
 const ChatMessage = require("../models/ChatMessage");
 exports.createOrder = (req, res) => __awaiter(this, void 0, void 0, function* () {
-    const { orderItems, voucherCode, shippingAddress } = req.body;
+    const { orderItems, voucherCode, shippingAddress, paymentMethod } = req.body;
     if (orderItems && orderItems.length === 0) {
         return res.status(400).json({ message: "No order items" });
     }
@@ -111,6 +111,7 @@ exports.createOrder = (req, res) => __awaiter(this, void 0, void 0, function* ()
     }
     let createdOrder;
     try {
+        const validMethod = ["cod", "online"].includes(paymentMethod) ? paymentMethod : "cod";
         const order = new Order({
             user: req.user._id,
             orderItems,
@@ -119,6 +120,9 @@ exports.createOrder = (req, res) => __awaiter(this, void 0, void 0, function* ()
             voucherCode: appliedCode,
             originalTotal: baseTotal,
             discountAmount,
+            paymentMethod: validMethod,
+            isPaid: validMethod === "online",
+            paidAt: validMethod === "online" ? new Date() : undefined,
         });
         createdOrder = yield order.save();
     }
