@@ -28,11 +28,22 @@ const orderSchema = new mongoose.Schema(
     },
     isPaid: { type: Boolean, default: false },
     paidAt: { type: Date },
+    paymentMethod: {
+      type: String,
+      enum: ["cod", "online"],
+      default: "cod",
+    },
     isCancelled: { type: Boolean, default: false },
     cancelledAt: { type: Date },
   },
   { timestamps: true }
 );
+
+orderSchema.index({ user: 1, createdAt: -1 });
+orderSchema.index({ "orderItems.product": 1 });
+orderSchema.index({ isPaid: 1 });
+orderSchema.index({ isCancelled: 1 });
+orderSchema.index({ paymentMethod: 1 });
 
 module.exports = mongoose.model("Order", orderSchema);
 

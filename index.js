@@ -100,10 +100,33 @@ app.set("io", io);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api", apiRoutes);
 const { GoogleGenAI } = require("@google/genai");
+const Product = require("./src/models/Product");
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
+
+/**
+ * Extract search keywords from user message for product lookup.
+ * Strips common Vietnamese question words / filler so the DB query is more precise.
+ */
+const extractSearchKeywords = (message) => {
+  const stopWords = [
+    "có", "không", "bao nhiêu", "giá", "là", "gì", "nào", "cho",
+    "tôi", "mình", "shop", "cửa hàng", "bán", "sản phẩm", "hàng",
+    "xin", "chào", "ơi", "vậy", "thế", "được", "muốn", "mua",
+    "tìm", "kiếm", "xem", "hỏi", "về", "của", "và", "hoặc",
+    "hay", "với", "trong", "trên", "dưới", "này", "đó", "kia",
+    "còn", "hết", "rồi", "chưa", "đã", "sẽ", "đang", "cái",
+    "chiếc", "bộ", "cặp", "đôi", "ai", "giúp", "nhé", "ạ",
+  ];
+  const words = message
+    .toLowerCase()
+    .replace(/[?!.,;:]/g, "")
+    .split(/\s+/)
+    .filter((w) => w.length > 1 && !stopWords.includes(w));
+  return words.join(" ");
+};
 
 app.post("/api/chat", async (req, res) => {
   try {
@@ -120,9 +143,116 @@ app.post("/api/chat", async (req, res) => {
       return res.status(400).json({ error: "Vui lòng nhập nội dung tin nhắn" });
     }
 
+    // --- 1. Search products in DB matching user query ---
+    let productContext = "";
+    try {
+      const keywords = extractSearchKeywords(message);
+
+      let matchedProducts = [];
+
+      if (keywords.trim()) {
+        // Try regex search on product name with each keyword
+        const keywordList = keywords.split(/\s+/).filter(Boolean);
+        const regexPatterns = keywordList.map(
+          (kw) => new RegExp(kw.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i")
+        );
+
+        // Search products matching ANY keyword in name, category or description
+        matchedProducts = await Product.find({
+          $or: [
+            { name: { $regex: keywords, $options: "i" } },
+            ...keywordList.map((kw) => ({
+              name: { $regex: kw, $options: "i" },
+            })),
+            ...keywordList.map((kw) => ({
+              category: { $regex: kw, $options: "i" },
+            })),
+            ...keywordList.map((kw) => ({
+              description: { $regex: kw, $options: "i" },
+            })),
+          ],
+        })
+          .populate("seller", "shopName name")
+          .limit(10)
+          .lean();
+      }
+
+      // If no keyword-specific match, fetch some popular products as general context
+      if (matchedProducts.length === 0) {
+        matchedProducts = await Product.find({})
+          .sort({ sold: -1 })
+          .populate("seller", "shopName name")
+          .limit(8)
+          .lean();
+      }
+
+      if (matchedProducts.length > 0) {
+        const productList = matchedProducts
+          .map((p, i) => {
+            const seller = p.seller;
+            const shopName =
+              seller && (seller.shopName || seller.name)
+                ? seller.shopName || seller.name
+                : "Không rõ";
+            const specs =
+              p.detailSpecs && p.detailSpecs.length > 0
+                ? p.detailSpecs.map((s) => `${s.label}: ${s.value}`).join(", ")
+                : "Không có";
+            const options =
+              p.optionGroups && p.optionGroups.length > 0
+                ? p.optionGroups
+                    .map((g) => `${g.name}: ${g.values.join(", ")}`)
+                    .join("; ")
+                : "Không có";
+            return `${i + 1}. Tên: ${p.name}
+   - Giá: ${p.price?.toLocaleString("vi-VN")}đ
+   - Giá gốc: ${p.originalPrice?.toLocaleString("vi-VN")}đ
+   - Giảm giá: ${p.discount || 0}%
+   - Danh mục: ${p.category}
+   - Đánh giá: ${p.rating}/5 sao
+   - Đã bán: ${p.sold || 0}
+   - Tồn kho: ${p.stock || 0}
+   - Shop: ${shopName}
+   - Mô tả: ${(p.description || "Không có mô tả").substring(0, 200)}
+   - Thông số: ${specs}
+   - Tùy chọn: ${options}
+   - ID: ${p._id}`;
+          })
+          .join("\n\n");
+
+        productContext = `\n\n=== DỮ LIỆU SẢN PHẨM TỪ CƠ SỞ DỮ LIỆU CỦA CỬA HÀNG ===\nDưới đây là các sản phẩm tìm thấy liên quan đến câu hỏi của khách hàng:\n\n${productList}\n\n=== HẾT DỮ LIỆU SẢN PHẨM ===`;
+      }
+    } catch (dbError) {
+      console.error("Lỗi truy vấn sản phẩm cho chatbot:", dbError);
+      // Continue without product context if DB query fails
+    }
+
+    // --- 2. Build system instruction with product context ---
+    const systemInstruction = `Bạn là trợ lý bán hàng AI thân thiện và chuyên nghiệp cho cửa hàng trực tuyến ShopBee.
+
+NHIỆM VỤ CỦA BẠN:
+- Trả lời khách hàng một cách lịch sự, nhiệt tình và chuyên nghiệp bằng tiếng Việt.
+- Khi khách hỏi về sản phẩm, hãy sử dụng DỮ LIỆU SẢN PHẨM bên dưới (nếu có) để trả lời chính xác với thông tin thực tế từ cửa hàng.
+- Giới thiệu sản phẩm với đầy đủ thông tin: tên, giá, giảm giá, đánh giá, mô tả, tùy chọn, tồn kho...
+- Nếu khách hỏi về sản phẩm mà KHÔNG có trong dữ liệu, hãy nói rằng hiện tại cửa hàng chưa có sản phẩm đó và gợi ý khách tìm kiếm trên trang chủ.
+- Nếu khách hỏi về vận chuyển, đổi trả, thanh toán... hãy trả lời chung theo chính sách thương mại điện tử thông thường.
+- Trả lời ngắn gọn, dễ đọc, có thể dùng emoji cho sinh động.
+- Khi liệt kê sản phẩm, hãy format đẹp và dễ đọc.
+- Nếu có nhiều sản phẩm phù hợp, hãy giới thiệu tối đa 5 sản phẩm nổi bật nhất.
+
+CHÍNH SÁCH CỬA HÀNG:
+- Miễn phí vận chuyển cho đơn hàng từ 50.000đ
+- Đổi trả miễn phí trong 7 ngày
+- Hỗ trợ thanh toán: COD, chuyển khoản ngân hàng, ví điện tử
+- Bảo hành theo chính sách từng sản phẩm${productContext}`;
+
+    // --- 3. Call Gemini AI with product context ---
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: message,
+      contents: [{ role: "user", parts: [{ text: message }] }],
+      config: {
+        systemInstruction: systemInstruction,
+      },
     });
 
     const reply =
@@ -162,10 +292,60 @@ app.post("/api/chat/assistant", async (req, res) => {
       return res.status(400).json({ error: "Vui lòng nhập nội dung tin nhắn" });
     }
 
-    const systemInstruction = `Bạn là trợ lý bán hàng thân thiện và chuyên nghiệp cho một cửa hàng online. 
+    // Search products in DB for context
+    let productContext = "";
+    try {
+      const keywords = extractSearchKeywords(message);
+      let matchedProducts = [];
+
+      if (keywords.trim()) {
+        const keywordList = keywords.split(/\s+/).filter(Boolean);
+        matchedProducts = await Product.find({
+          $or: [
+            { name: { $regex: keywords, $options: "i" } },
+            ...keywordList.map((kw) => ({
+              name: { $regex: kw, $options: "i" },
+            })),
+            ...keywordList.map((kw) => ({
+              category: { $regex: kw, $options: "i" },
+            })),
+          ],
+        })
+          .populate("seller", "shopName name")
+          .limit(10)
+          .lean();
+      }
+
+      if (matchedProducts.length === 0) {
+        matchedProducts = await Product.find({})
+          .sort({ sold: -1 })
+          .populate("seller", "shopName name")
+          .limit(8)
+          .lean();
+      }
+
+      if (matchedProducts.length > 0) {
+        const productList = matchedProducts
+          .map((p, i) => {
+            const seller = p.seller;
+            const shopName =
+              seller && (seller.shopName || seller.name)
+                ? seller.shopName || seller.name
+                : "Không rõ";
+            return `${i + 1}. ${p.name} - Giá: ${p.price?.toLocaleString("vi-VN")}đ (Giảm ${p.discount || 0}%) - Đánh giá: ${p.rating}/5 - Đã bán: ${p.sold || 0} - Shop: ${shopName}`;
+          })
+          .join("\n");
+
+        productContext = `\n\nSẢN PHẨM TRONG CỬA HÀNG:\n${productList}`;
+      }
+    } catch (dbError) {
+      console.error("Lỗi truy vấn sản phẩm cho assistant:", dbError);
+    }
+
+    const systemInstruction = `Bạn là trợ lý bán hàng thân thiện và chuyên nghiệp cho cửa hàng online ShopBee. 
         Hãy trả lời khách hàng một cách lịch sự, nhiệt tình. 
-        Nếu được hỏi về sản phẩm, hãy tư vấn chi tiết về tính năng, giá cả, khuyến mãi.
-        Nếu không biết câu trả lời, hãy thành thật nói rằng bạn sẽ chuyển vấn đề cho nhân viên hỗ trợ.`;
+        Nếu được hỏi về sản phẩm, hãy sử dụng dữ liệu sản phẩm bên dưới để tư vấn chi tiết về tính năng, giá cả, khuyến mãi.
+        Nếu không biết câu trả lời, hãy thành thật nói rằng bạn sẽ chuyển vấn đề cho nhân viên hỗ trợ.${productContext}`;
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",

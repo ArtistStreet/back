@@ -6,7 +6,7 @@ const { __catalogForServer } = require("./voucherController");
 const ChatMessage = require("../models/ChatMessage");
 
 exports.createOrder = async (req, res) => {
-  const { orderItems, voucherCode, shippingAddress } = req.body;
+  const { orderItems, voucherCode, shippingAddress, paymentMethod } = req.body;
 
   if (orderItems && orderItems.length === 0) {
     return res.status(400).json({ message: "No order items" });
@@ -140,6 +140,7 @@ exports.createOrder = async (req, res) => {
 
   let createdOrder;
   try {
+    const validMethod = ["cod", "online"].includes(paymentMethod) ? paymentMethod : "cod";
     const order = new Order({
       user: req.user._id,
       orderItems,
@@ -148,6 +149,9 @@ exports.createOrder = async (req, res) => {
       voucherCode: appliedCode,
       originalTotal: baseTotal,
       discountAmount,
+      paymentMethod: validMethod,
+      isPaid: validMethod === "online",
+      paidAt: validMethod === "online" ? new Date() : undefined,
     });
     createdOrder = await order.save();
   } catch (error) {

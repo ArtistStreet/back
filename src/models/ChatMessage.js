@@ -30,6 +30,12 @@ const chatMessageSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    product: {
+      productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
+      name: String,
+      image: String,
+      price: Number,
+    },
     sellerReadAt: {
       type: Date,
     },
@@ -39,6 +45,10 @@ const chatMessageSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+chatMessageSchema.index({ seller: 1, customer: 1, createdAt: -1 });
+chatMessageSchema.index({ isAI: 1, createdAt: -1 });
+chatMessageSchema.index({ customer: 1, isRead: 1 });
 
 module.exports = mongoose.model("ChatMessage", chatMessageSchema);
 

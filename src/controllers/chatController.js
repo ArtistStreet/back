@@ -112,6 +112,12 @@ exports.getMessages = async (req, res) => {
       isAI: m.isAI ?? false,
       sellerReadAt: m.sellerReadAt || null,
       userReadAt: m.userReadAt || null,
+      product: m.product && m.product.productId ? {
+        productId: String(m.product.productId),
+        name: m.product.name || "",
+        image: m.product.image || "",
+        price: m.product.price || 0,
+      } : null,
     }));
 
     const otherSender = isSupport ? "customer" : "seller";
@@ -214,11 +220,23 @@ exports.sendMessage = async (req, res) => {
       return res.status(400).json({ message: "Seller không hợp lệ" });
     }
 
+    // Handle product attachment
+    let productData = undefined;
+    if (body.product && body.product.productId) {
+      productData = {
+        productId: new mongoose.Types.ObjectId(body.product.productId),
+        name: body.product.name || "",
+        image: body.product.image || "",
+        price: body.product.price || 0,
+      };
+    }
+
     const message = await ChatMessage.create({
       customer: new mongoose.Types.ObjectId(customerId),
       seller: new mongoose.Types.ObjectId(sellerId),
       sender: isSupport ? "seller" : "customer",
       text,
+      ...(productData ? { product: productData } : {}),
     });
 
     const payload = {
@@ -229,6 +247,12 @@ exports.sendMessage = async (req, res) => {
       isRead: false,
       customerId,
       sellerId,
+      product: productData ? {
+        productId: String(productData.productId),
+        name: productData.name,
+        image: productData.image,
+        price: productData.price,
+      } : null,
     };
 
     const io = req.app.get("io");
@@ -315,25 +339,43 @@ exports.getConversations = async (req, res) => {
       String(isSupport ? s._id.customer : s._id),
     );
     const partners = await User.find({ _id: { $in: partnerIds } })
-      .select("name email avatar")
+      .select("name email avatar shopName")
       .lean();
     const partnerMap = new Map(partners.map((p) => [String(p._id), p]));
 
     const result = summaries.map((s) => {
-      const customerId = String(isSupport ? s._id.customer : s._id);
-      const sellerId = String(isSupport ? s._id.seller : user._id);
-      const info = partnerMap.get(customerId);
-      return {
-        partnerId: customerId,
-        sellerId,
-        name: info?.name || "Người dùng",
-        email: info?.email || "",
-        avatar: info?.avatar || "",
-        lastMessage: s.lastMessage,
-        lastSender: s.lastSender,
-        lastAt: s.lastAt,
-        unreadCount: s.unreadCount || 0,
-      };
+      if (isSupport) {
+        // Seller/Admin view: partner is the customer
+        const customerId = String(s._id.customer);
+        const sellerId = String(s._id.seller);
+        const info = partnerMap.get(customerId);
+        return {
+          partnerId: customerId,
+          sellerId,
+          name: info?.name || "Người dùng",
+          email: info?.email || "",
+          avatar: info?.avatar || "",
+          lastMessage: s.lastMessage,
+          lastSender: s.lastSender,
+          lastAt: s.lastAt,
+          unreadCount: s.unreadCount || 0,
+        };
+      } else {
+        // Customer view: partner is the seller
+        const sellerId = String(s._id);
+        const info = partnerMap.get(sellerId);
+        return {
+          partnerId: sellerId,
+          sellerId,
+          name: info?.shopName || info?.name || "Shop",
+          email: info?.email || "",
+          avatar: info?.avatar || "",
+          lastMessage: s.lastMessage,
+          lastSender: s.lastSender,
+          lastAt: s.lastAt,
+          unreadCount: s.unreadCount || 0,
+        };
+      }
     });
 
     res.json(result);
@@ -342,4 +384,28 @@ exports.getConversations = async (req, res) => {
   }
 };
 
+exports.deleteConversation = async (req, res) => {
+  try {
+    const { user } = req;
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const partnerId = normalizeId(req.params.partnerId);
+    if (!partnerId || !mongoose.Types.ObjectId.isValid(partnerId)) {
+      return res.status(400).json({ message: "partnerId không hợp lệ" });
+    }
+
+    const isSupport = user.role === "admin" || user.role === "seller";
+    const filter = isSupport
+      ? { seller: user._id, customer: new mongoose.Types.ObjectId(partnerId) }
+      : { customer: user._id, seller: new mongoose.Types.ObjectId(partnerId) };
+
+    const result = await ChatMessage.deleteMany(filter);
+    res.json({ success: true, deletedCount: result.deletedCount });
+  } catch (error) {
+    console.error("deleteConversation failed", error);
+    res.status(500).json({ message: error.message });
+  }
+};
 
