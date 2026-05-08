@@ -1,4 +1,4 @@
-const express = require("express");
+﻿const express = require("express");
 const router = express.Router();
 const productController = require("../controllers/productController");
 const authController = require("../controllers/authController");
@@ -7,6 +7,8 @@ const voucherController = require("../controllers/voucherController");
 const notificationController = require("../controllers/notificationController");
 const reviewController = require("../controllers/reviewController");
 const chatController = require("../controllers/chatController");
+const bannerController = require("../controllers/bannerController");
+const adminController = require("../controllers/adminController");
 const {
   protect,
   optionalProtect,
@@ -30,6 +32,7 @@ const productUploadDir = path.join(
   "products",
 );
 const reviewUploadDir = path.join(__dirname, "..", "..", "uploads", "reviews");
+const bannerUploadDir = path.join(__dirname, "..", "..", "uploads", "banners");
 
 if (!fs.existsSync(avatarUploadDir)) {
   fs.mkdirSync(avatarUploadDir, { recursive: true });
@@ -40,13 +43,16 @@ if (!fs.existsSync(productUploadDir)) {
 if (!fs.existsSync(reviewUploadDir)) {
   fs.mkdirSync(reviewUploadDir, { recursive: true });
 }
+if (!fs.existsSync(bannerUploadDir)) {
+  fs.mkdirSync(bannerUploadDir, { recursive: true });
+}
 
 const imageUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 8 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (!file.mimetype.startsWith("image/")) {
-      cb(new Error("Chỉ chấp nhận file ảnh"));
+      cb(new Error("Chá»‰ cháº¥p nháº­n file áº£nh"));
       return;
     }
     cb(null, true);
@@ -79,11 +85,11 @@ const handleMulterUpload = (middleware) => (req, res, next) => {
     if (err instanceof multer.MulterError) {
       const message =
         err.code === "LIMIT_FILE_SIZE"
-          ? "File quá lớn. Vui lòng chọn file nhỏ hơn giới hạn cho phép."
+          ? "File quÃ¡ lá»›n. Vui lÃ²ng chá»n file nhá» hÆ¡n giá»›i háº¡n cho phÃ©p."
           : err.message;
       return res.status(400).json({ message });
     }
-    return res.status(400).json({ message: err.message || "Upload thất bại" });
+    return res.status(400).json({ message: err.message || "Upload tháº¥t báº¡i" });
   });
 };
 
@@ -96,7 +102,7 @@ const productVideoUpload = multer({
   limits: { fileSize: 200 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (!isVideoUpload(file)) {
-      cb(new Error("Chỉ chấp nhận file video"));
+      cb(new Error("Chá»‰ cháº¥p nháº­n file video"));
       return;
     }
     cb(null, true);
@@ -115,7 +121,7 @@ const reviewMediaUpload = multer({
       cb(null, true);
       return;
     }
-    cb(new Error("Chỉ chấp nhận ảnh hoặc video"));
+    cb(new Error("Chá»‰ cháº¥p nháº­n áº£nh hoáº·c video"));
   },
 }).fields([
   { name: "images", maxCount: 8 },
@@ -174,6 +180,7 @@ const optimizeUploadedImage = (options) => {
 const uploadAvatarRaw = imageUpload.single("avatar");
 const uploadShopCoverRaw = imageUpload.single("cover");
 const uploadProductRaw = imageUpload.single("image");
+const uploadBannerRaw = imageUpload.single("image");
 const optimizeAvatar = optimizeUploadedImage({
   targetDir: avatarUploadDir,
   filenamePrefix: "avatar",
@@ -191,6 +198,12 @@ const optimizeProduct = optimizeUploadedImage({
   filenamePrefix: "product",
   maxWidth: 1600,
   maxHeight: 1600,
+});
+const optimizeBanner = optimizeUploadedImage({
+  targetDir: bannerUploadDir,
+  filenamePrefix: "banner",
+  maxWidth: 1920,
+  maxHeight: 960,
 });
 
 // Auth routes
@@ -375,6 +388,31 @@ router.get('/vouchers/discover', protect, voucherController.getDiscover);
 router.get('/vouchers/history', protect, voucherController.getHistory);
 router.post('/vouchers/add', protect, voucherController.addVoucher);
 
+// Banner routes (public)
+router.get('/banners/active', bannerController.getActiveBanners);
+
+// Banner routes (admin only)
+router.get('/banners', protect, admin, bannerController.getAllBanners);
+router.post('/banners', protect, admin, bannerController.createBanner);
+router.put('/banners/:id', protect, admin, bannerController.updateBanner);
+router.delete('/banners/:id', protect, admin, bannerController.deleteBanner);
+router.post(
+  '/banners/upload',
+  protect,
+  admin,
+  uploadBannerRaw,
+  optimizeBanner,
+  bannerController.uploadBannerImage,
+);
+
+// Admin management routes (admin only)
+router.get('/admin/users', protect, admin, adminController.getAllUsers);
+router.get('/admin/admins', protect, admin, adminController.getAdminUsers);
+router.post('/admin/create-admin', protect, admin, adminController.createAdmin);
+router.put('/admin/users/:id/permissions', protect, admin, adminController.updateAdminPermissions);
+router.put('/admin/users/:id/role', protect, admin, adminController.changeUserRole);
+router.delete('/admin/users/:id', protect, admin, adminController.deleteUser);
+
 // Health check - DB connection status
 router.get('/health/db', (_req, res) => {
   const conn = mongoose.connection;
@@ -382,5 +420,6 @@ router.get('/health/db', (_req, res) => {
   const stateText = state === 1 ? 'connected' : state === 2 ? 'connecting' : state === 3 ? 'disconnecting' : 'disconnected';
   res.json({ connected: state === 1, state, stateText, name: conn.name || null, host: conn.host || null, port: conn.port || null });
 });
+
 
 module.exports = router;

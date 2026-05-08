@@ -35,6 +35,20 @@ const userSchema = new mongoose.Schema(
     shopCover: { type: String },
     shopAddress: { type: String },
     addresses: { type: [addressSchema], default: [] },
+    adminPermissions: {
+      type: [String],
+      enum: [
+        "manage_products",
+        "manage_orders",
+        "manage_users",
+        "manage_banners",
+        "manage_reviews",
+        "manage_chat",
+        "manage_vouchers",
+        "view_dashboard",
+      ],
+      default: [],
+    },
   },
   { timestamps: true },
 );

@@ -67,6 +67,7 @@ exports.register = async (req, res) => {
         shopAvatar: user.shopAvatar,
         shopCover: user.shopCover,
         shopAddress: user.shopAddress,
+        adminPermissions: user.adminPermissions,
       },
     });
   } catch (error) {
@@ -116,6 +117,7 @@ exports.login = async (req, res) => {
         shopAvatar: user.shopAvatar,
         shopCover: user.shopCover,
         shopAddress: user.shopAddress,
+        adminPermissions: user.adminPermissions,
       },
     });
   } catch (error) {
@@ -215,6 +217,7 @@ exports.updateProfile = async (req, res) => {
         shopAvatar: user.shopAvatar,
         shopCover: user.shopCover,
         shopAddress: user.shopAddress,
+        adminPermissions: user.adminPermissions,
       },
     });
   } catch (error) {
