@@ -34,6 +34,12 @@ const userSchema = new mongoose.Schema(
     shopAvatar: { type: String },
     shopCover: { type: String },
     shopAddress: { type: String },
+    sellerRequestStatus: {
+      type: String,
+      enum: ["none", "pending", "approved", "rejected"],
+      default: "none",
+    },
+    sellerRequestDate: { type: Date },
     addresses: { type: [addressSchema], default: [] },
     adminPermissions: {
       type: [String],

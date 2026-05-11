@@ -197,3 +197,79 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// Get pending seller requests
+exports.getPendingSellerRequests = async (req, res) => {
+  try {
+    const users = await User.find({ sellerRequestStatus: "pending" })
+      .select("-password")
+      .sort({ sellerRequestDate: -1 })
+      .lean();
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Approve seller request
+exports.approveSellerRequest = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    }
+
+    if (user.sellerRequestStatus !== "pending") {
+      return res.status(400).json({ message: "Người dùng không có yêu cầu đang chờ duyệt" });
+    }
+
+    user.role = "seller";
+    user.sellerRequestStatus = "approved";
+    await user.save();
+
+    res.json({
+      message: "Đã chấp nhận yêu cầu trở thành người bán",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        sellerRequestStatus: user.sellerRequestStatus,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Reject seller request
+exports.rejectSellerRequest = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+    }
+
+    if (user.sellerRequestStatus !== "pending") {
+      return res.status(400).json({ message: "Người dùng không có yêu cầu đang chờ duyệt" });
+    }
+
+    user.sellerRequestStatus = "rejected";
+    await user.save();
+
+    res.json({
+      message: "Đã từ chối yêu cầu trở thành người bán",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        sellerRequestStatus: user.sellerRequestStatus,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

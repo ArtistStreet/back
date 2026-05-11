@@ -68,6 +68,8 @@ exports.register = async (req, res) => {
         shopCover: user.shopCover,
         shopAddress: user.shopAddress,
         adminPermissions: user.adminPermissions,
+        sellerRequestStatus: user.sellerRequestStatus,
+        sellerRequestDate: user.sellerRequestDate,
       },
     });
   } catch (error) {
@@ -118,6 +120,8 @@ exports.login = async (req, res) => {
         shopCover: user.shopCover,
         shopAddress: user.shopAddress,
         adminPermissions: user.adminPermissions,
+        sellerRequestStatus: user.sellerRequestStatus,
+        sellerRequestDate: user.sellerRequestDate,
       },
     });
   } catch (error) {
@@ -218,6 +222,8 @@ exports.updateProfile = async (req, res) => {
         shopCover: user.shopCover,
         shopAddress: user.shopAddress,
         adminPermissions: user.adminPermissions,
+        sellerRequestStatus: user.sellerRequestStatus,
+        sellerRequestDate: user.sellerRequestDate,
       },
     });
   } catch (error) {
@@ -324,7 +330,16 @@ exports.becomeSeller = async (req, res) => {
       return res.status(400).json({ message: "Admin đã có quyền bán hàng" });
     }
 
-    user.role = "seller";
+    if (user.role === "seller") {
+      return res.status(400).json({ message: "Bạn đã là người bán hàng" });
+    }
+
+    if (user.sellerRequestStatus === "pending") {
+      return res.status(400).json({ message: "Yêu cầu của bạn đang chờ admin phê duyệt" });
+    }
+
+    user.sellerRequestStatus = "pending";
+    user.sellerRequestDate = new Date();
     await user.save();
 
     const token = jwt.sign(
@@ -334,7 +349,7 @@ exports.becomeSeller = async (req, res) => {
     );
 
     res.json({
-      message: "Chúc mừng! Bạn đã trở thành người bán hàng",
+      message: "Yêu cầu trở thành người bán đã được gửi. Vui lòng chờ admin phê duyệt.",
       token,
       user: {
         id: user._id,
@@ -351,6 +366,8 @@ exports.becomeSeller = async (req, res) => {
         shopAvatar: user.shopAvatar,
         shopCover: user.shopCover,
         shopAddress: user.shopAddress,
+        sellerRequestStatus: user.sellerRequestStatus,
+        sellerRequestDate: user.sellerRequestDate,
       },
     });
   } catch (error) {

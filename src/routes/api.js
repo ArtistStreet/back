@@ -1,4 +1,4 @@
-﻿const express = require("express");
+const express = require("express");
 const router = express.Router();
 const productController = require("../controllers/productController");
 const authController = require("../controllers/authController");
@@ -412,6 +412,9 @@ router.post('/admin/create-admin', protect, admin, adminController.createAdmin);
 router.put('/admin/users/:id/permissions', protect, admin, adminController.updateAdminPermissions);
 router.put('/admin/users/:id/role', protect, admin, adminController.changeUserRole);
 router.delete('/admin/users/:id', protect, admin, adminController.deleteUser);
+router.get('/admin/seller-requests', protect, admin, adminController.getPendingSellerRequests);
+router.put('/admin/seller-requests/:id/approve', protect, admin, adminController.approveSellerRequest);
+router.put('/admin/seller-requests/:id/reject', protect, admin, adminController.rejectSellerRequest);
 
 // Health check - DB connection status
 router.get('/health/db', (_req, res) => {
